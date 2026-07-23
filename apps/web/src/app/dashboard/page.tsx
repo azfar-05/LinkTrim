@@ -14,10 +14,8 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div>
-      <h1>Dashboard</h1>
-      <p>Welcome {session.user.name}</p>
+    <main className="w-full h-full bg-background/50">
       <Dashboard session={session} />
-    </div>
+    </main>
   );
 }
