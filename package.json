@@ -44,6 +44,7 @@
   },
   "devDependencies": {
     "@LinkTrim/config": "workspace:*",
+    "@better-auth/cli": "^1.4.21",
     "@types/node": "^22.13.14",
     "turbo": "^2.10.2",
     "typescript": "catalog:"

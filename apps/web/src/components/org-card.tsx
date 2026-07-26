@@ -11,7 +11,7 @@ export default function OrgCard({ org }: OrgCardProps) {
   const isAdmin = org.currentUserRole === "ADMIN";
 
   return (
-    <Link href={`/dashboard/${org.id}` as any} className="group block focus:outline-none h-full">
+    <Link href={`/orgs/${org.slug}` as any} className="group block focus:outline-none h-full">
       <Card className="h-full border border-border bg-card transition-all duration-200 hover:border-primary hover:bg-accent/5 hover:shadow-md relative overflow-hidden flex flex-col justify-between">
         {/* Subtle hover glow bar at the top */}
         <div className="absolute top-0 left-0 w-full h-[2px] bg-primary scale-x-0 transition-transform duration-200 origin-left group-hover:scale-x-100" />
