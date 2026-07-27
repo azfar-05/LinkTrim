@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { ChevronRight, Link2 } from "lucide-react";
+import { Link2 } from "lucide-react";
 
-import { Button } from "@LinkTrim/ui/components/button";
+import { GetStartedButton } from "@/components/get-started-button";
 
 const linkRows = [
   { slug: "summer-launch", clicks: "12,847", last: "Today, 9:41 AM" },
@@ -37,12 +37,7 @@ function Hero() {
           role-based access — one shared workspace for your organization.
         </p>
         <div className="mt-8">
-          <Link href="/login">
-            <Button size="lg">
-              Get Started
-              <ChevronRight className="ml-1 h-4 w-4" />
-            </Button>
-          </Link>
+          <GetStartedButton />
         </div>
       </div>
     </section>
@@ -248,12 +243,7 @@ function CTAFooter() {
             already a member.
           </p>
           <div className="mt-8">
-            <Link href="/login">
-              <Button size="lg">
-                Get Started
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </Button>
-            </Link>
+            <GetStartedButton />
           </div>
         </div>
       </section>

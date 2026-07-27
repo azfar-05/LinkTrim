@@ -44,20 +44,26 @@ export interface Organization {
 export interface Link {
   /** The unique identifier of the link */
   id: string;
-  /** The descriptive title of the link */
-  title: string;
-  /** The generated shortened URL path or full short URL */
-  shortUrl: string;
+  /** The URL-friendly slug (e.g. `summer-launch`) */
+  slug: string;
   /** The original destination URL that the short URL redirects to */
   originalUrl: string;
   /** The total number of clicks this link has received */
   clickCount: number;
+  /** The maximum number of clicks before the link is disabled (optional) */
+  clickCap: number | null;
+  /** Whether the link is currently active */
+  isActive: boolean;
+  /** The date and time when the link expires (optional) */
+  expiresAt: string | null;
+  /** The date and time when the link should become active (optional) */
+  scheduledAt: string | null;
   /** The unique identifier of the user who created the link */
   createdByUserId: string;
   /** The name of the user who created the link */
   createdByName: string;
   /** The date and time when the link was created */
-  createdAt: Date | string;
+  createdAt: string;
 }
 
 /**
