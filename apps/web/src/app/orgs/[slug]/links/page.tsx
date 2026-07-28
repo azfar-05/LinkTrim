@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { BarChart2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@LinkTrim/ui/components/button";
@@ -14,6 +15,9 @@ import {
 import { Input } from "@LinkTrim/ui/components/input";
 import { Label } from "@LinkTrim/ui/components/label";
 import { useOrganization } from "@/context/organization-context";
+import LinkAnalyticsModal, {
+  type LinkAnalyticsLink,
+} from "@/components/link-analytics-modal";
 
 type LinkRow = {
   id: string;
@@ -59,6 +63,21 @@ export default function LinksPage() {
 
   const [links, setLinks] = useState<LinkRow[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // ── Per-link analytics drawer ──
+  const [analyticsLink, setAnalyticsLink] = useState<LinkAnalyticsLink | null>(null);
+  const [analyticsOpen, setAnalyticsOpen] = useState(false);
+
+  function openLinkAnalytics(row: LinkRow) {
+    setAnalyticsLink({
+      id: row.id,
+      title: `/${row.slug}`,
+      shortUrl: `${window.location.origin}/${row.slug}`,
+      originalUrl: row.originalUrl,
+      clickCount: row.clickCount,
+    });
+    setAnalyticsOpen(true);
+  }
 
   const [originalUrl, setOriginalUrl] = useState("");
   const [slug, setSlug] = useState("");
@@ -300,6 +319,9 @@ export default function LinksPage() {
                   <th className="hidden px-4 py-2.5 text-left font-medium text-muted-foreground md:table-cell">
                     Created
                   </th>
+                  <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">
+                    <span className="sr-only">Analytics</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -332,6 +354,18 @@ export default function LinksPage() {
                     <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
                       {new Date(row.createdAt).toLocaleDateString()}
                     </td>
+                    <td className="px-4 py-3 text-right">
+                      <Button
+                        id={`analytics-btn-${row.id}`}
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => openLinkAnalytics(row)}
+                        aria-label={`View analytics for /${row.slug}`}
+                        title="View analytics"
+                      >
+                        <BarChart2 className="size-3.5" />
+                      </Button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -339,6 +373,13 @@ export default function LinksPage() {
           </div>
         )}
       </div>
+
+      {/* ── Per-link analytics drawer ── */}
+      <LinkAnalyticsModal
+        isOpen={analyticsOpen}
+        onClose={() => setAnalyticsOpen(false)}
+        link={analyticsLink}
+      />
     </div>
   );
 }
