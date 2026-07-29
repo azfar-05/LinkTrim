@@ -43,6 +43,23 @@ const RESERVED_SLUGS = new Set([
   "manifest",
   "favicon",
   "_next",
+  "admin",
+  "dashboard",
+  "settings",
+  "profile",
+  "account",
+  "help",
+  "support",
+  "status",
+  "docs",
+  "terms",
+  "privacy",
+  "pricing",
+  "about",
+  "contact",
+  "blog",
+  "home",
+  "index",
 ]);
 
 function randomSlug() {

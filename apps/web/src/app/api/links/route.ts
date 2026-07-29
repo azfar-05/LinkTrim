@@ -16,6 +16,23 @@ const RESERVED_SLUGS = new Set([
   "manifest",
   "favicon",
   "_next",
+  "admin",
+  "dashboard",
+  "settings",
+  "profile",
+  "account",
+  "help",
+  "support",
+  "status",
+  "docs",
+  "terms",
+  "privacy",
+  "pricing",
+  "about",
+  "contact",
+  "blog",
+  "home",
+  "index",
 ]);
 
 function generateSlug(length = 8) {
@@ -74,7 +91,7 @@ async function tryInsert(
   } catch (error) {
     const pgError = error as { code?: string; constraint?: string };
 
-    if (pgError.code === "23505" && pgError.constraint === "link_slug_unique") {
+    if (pgError.code === "23505") {
       if (userSlug) {
         return NextResponse.json(
           {
@@ -182,21 +199,37 @@ export async function POST(request: NextRequest) {
     isActive: true,
   };
 
-  const parsedClickCap =
-    clickCap !== undefined && clickCap !== null
-      ? Number(clickCap)
-      : null;
-
-  if (parsedClickCap !== null && !Number.isNaN(parsedClickCap)) {
-    insertData.clickCap = parsedClickCap;
+  if (clickCap !== undefined && clickCap !== null) {
+    const parsed = Number(clickCap);
+    if (!Number.isInteger(parsed) || parsed < 1) {
+      return NextResponse.json(
+        { error: "clickCap must be a positive integer" },
+        { status: 400 },
+      );
+    }
+    insertData.clickCap = parsed;
   }
 
   if (expiresAt) {
-    insertData.expiresAt = new Date(expiresAt as string);
+    const d = new Date(expiresAt as string);
+    if (Number.isNaN(d.getTime())) {
+      return NextResponse.json(
+        { error: "expiresAt is not a valid date" },
+        { status: 400 },
+      );
+    }
+    insertData.expiresAt = d;
   }
 
   if (scheduledAt) {
-    insertData.scheduledAt = new Date(scheduledAt as string);
+    const d = new Date(scheduledAt as string);
+    if (Number.isNaN(d.getTime())) {
+      return NextResponse.json(
+        { error: "scheduledAt is not a valid date" },
+        { status: 400 },
+      );
+    }
+    insertData.scheduledAt = d;
   }
 
   return tryInsert(insertData, body.slug as string | undefined);
