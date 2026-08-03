@@ -1,10 +1,12 @@
 import { createDb } from "@LinkTrim/db";
 import * as schema from "@LinkTrim/db/schema/auth";
 import { env } from "@LinkTrim/env/server";
-import { betterAuth } from "better-auth";
+import { APIError, betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { organization } from "better-auth/plugins";
+
+import { isReservedSlug, reservedSlugMessage } from "./reserved-slugs";
 
 
 export function createAuth() {
@@ -25,6 +27,24 @@ export function createAuth() {
     plugins: [nextCookies(),
       organization({
         requireEmailVerificationOnInvitation: false,
+        organizationHooks: {
+          beforeCreateOrganization: async (data) => {
+            const slug = data.organization.slug?.toLowerCase();
+            if (slug && isReservedSlug(slug)) {
+              throw new APIError("BAD_REQUEST", {
+                message: reservedSlugMessage(slug),
+              });
+            }
+          },
+          beforeUpdateOrganization: async (data) => {
+            const slug = data.organization.slug?.toLowerCase();
+            if (slug && isReservedSlug(slug)) {
+              throw new APIError("BAD_REQUEST", {
+                message: reservedSlugMessage(slug),
+              });
+            }
+          },
+        },
       }),
     ],
   });

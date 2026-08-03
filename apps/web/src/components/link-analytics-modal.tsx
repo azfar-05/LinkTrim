@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { Check, Copy, ExternalLink } from "lucide-react";
+import { useState } from "react";
+import { ExternalLink } from "lucide-react";
 
 import { Button } from "@LinkTrim/ui/components/button";
 import {
@@ -15,6 +15,7 @@ import {
 import AnalyticsCharts, {
   type AnalyticsChartsProps,
 } from "@/components/analytics-charts";
+import { CopyButton } from "@/components/copy-button";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -86,40 +87,6 @@ export function getLinkAnalytics(
     hourlyActivity,
     weeklyActivity,
   };
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Copy button (small inline)
-// ─────────────────────────────────────────────────────────────────────────────
-
-function CopyButton({ value }: { value: string }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    } catch {
-      // ignore
-    }
-  }, [value]);
-
-  return (
-    <Button
-      variant="ghost"
-      size="icon-xs"
-      onClick={handleCopy}
-      aria-label="Copy short URL"
-      title="Copy short URL"
-    >
-      {copied ? (
-        <Check className="size-3 text-chart-3" />
-      ) : (
-        <Copy className="size-3" />
-      )}
-    </Button>
-  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

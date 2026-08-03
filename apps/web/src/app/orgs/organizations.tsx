@@ -16,9 +16,10 @@ import {
 } from "@LinkTrim/ui/components/empty";
 import { Building2Icon, PlusIcon, LogInIcon, RefreshCwIcon } from "lucide-react";
 import { toast } from "sonner";
+import { isAdminRole } from "@/lib/roles";
 
 function roleToUserRole(role: string): "ADMIN" | "MEMBER" {
-  return role === "owner" || role === "admin" ? "ADMIN" : "MEMBER";
+  return isAdminRole(role) ? "ADMIN" : "MEMBER";
 }
 
 export default function Organization({
@@ -199,7 +200,7 @@ export default function Organization({
                     Role:{" "}
                     <span
                       className={`font-mono ${
-                        inv.role === "owner" || inv.role === "admin"
+                        isAdminRole(inv.role)
                           ? "text-chart-3"
                           : "text-muted-foreground"
                       }`}

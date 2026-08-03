@@ -12,6 +12,11 @@ import {
 import { Button } from "@LinkTrim/ui/components/button";
 import { Input } from "@LinkTrim/ui/components/input";
 import { Label } from "@LinkTrim/ui/components/label";
+import { isReservedSlug, reservedSlugMessage } from "@LinkTrim/auth/reserved-slugs";
+import {
+  isValidOrgSlug,
+  ORG_SLUG_INVALID_MESSAGE,
+} from "@/lib/slugs";
 
 interface CreateOrgDialogProps {
   open: boolean;
@@ -101,9 +106,10 @@ export default function CreateOrgDialog({
 
     if (!slug.trim()) {
       newErrors.slug = "Slug is required.";
-    } else if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug.trim())) {
-      newErrors.slug =
-        "Slug must contain only lowercase letters, numbers, and hyphens.";
+    } else if (!isValidOrgSlug(slug.trim())) {
+      newErrors.slug = ORG_SLUG_INVALID_MESSAGE;
+    } else if (isReservedSlug(slug.trim())) {
+      newErrors.slug = reservedSlugMessage(slug.trim());
     }
 
     if (Object.keys(newErrors).length > 0) {

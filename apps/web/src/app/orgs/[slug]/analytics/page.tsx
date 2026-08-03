@@ -1,90 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, BarChart2, Check, Copy, ExternalLink } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, BarChart2, ExternalLink } from "lucide-react";
 
 import { Button } from "@LinkTrim/ui/components/button";
 import { useOrganization } from "@/context/organization-context";
 import AnalyticsCharts from "@/components/analytics-charts";
+import { CopyButton } from "@/components/copy-button";
 import { getLinkAnalytics } from "@/components/link-analytics-modal";
+import { useOrgLinks } from "@/hooks/use-org-links";
+import type { LinkRow } from "@/types/links";
 
-type LinkRow = {
-  id: string;
-  slug: string;
-  originalUrl: string;
-  clickCount: number;
-  clickCap: number | null;
-  isActive: boolean;
-  expiresAt: string | null;
-  scheduledAt: string | null;
-  createdByUserId: string;
-  createdByName: string | null;
-  createdAt: string;
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Copy Button
-// ─────────────────────────────────────────────────────────────────────────────
-function CopyButton({ value }: { value: string }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    } catch {
-      // ignore
-    }
-  }, [value]);
-
-  return (
-    <Button
-      variant="ghost"
-      size="icon-xs"
-      onClick={handleCopy}
-      aria-label="Copy short URL"
-      title="Copy short URL"
-      className="h-6 w-6"
-    >
-      {copied ? (
-        <Check className="size-3 text-chart-3" />
-      ) : (
-        <Copy className="size-3" />
-      )}
-    </Button>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Page Component
-// ─────────────────────────────────────────────────────────────────────────────
 export default function AnalyticsPage() {
   const org = useOrganization();
-  const [links, setLinks] = useState<LinkRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { links, loading } = useOrgLinks(org.slug);
 
   // ── Selected Link State (for Full Page Analytics View) ──
   const [selectedLink, setSelectedLink] = useState<LinkRow | null>(null);
-
-  const fetchLinks = useCallback(async () => {
-    try {
-      const res = await fetch(
-        `/api/links?organizationSlug=${org.slug}`,
-      );
-      if (res.ok) {
-        setLinks(await res.json());
-      }
-    } catch {
-      // silent
-    } finally {
-      setLoading(false);
-    }
-  }, [org.slug]);
-
-  useEffect(() => {
-    fetchLinks();
-  }, [fetchLinks]);
 
   // If a link is selected, render the Full-Page Analytics View
   if (selectedLink) {
@@ -126,7 +58,7 @@ export default function AnalyticsPage() {
             <div className="flex flex-col gap-1.5 md:items-end text-xs text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 <span className="font-mono">{shortUrl}</span>
-                <CopyButton value={shortUrl} />
+                <CopyButton value={shortUrl} className="h-6 w-6" />
                 <a
                   href={shortUrl}
                   target="_blank"

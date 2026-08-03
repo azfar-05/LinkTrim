@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { BarChart2 } from "lucide-react";
 import { toast } from "sonner";
@@ -15,71 +15,19 @@ import {
 import { Input } from "@LinkTrim/ui/components/input";
 import { Label } from "@LinkTrim/ui/components/label";
 import { useOrganization } from "@/context/organization-context";
+import { isReservedSlug, reservedSlugMessage } from "@LinkTrim/auth/reserved-slugs";
 import LinkAnalyticsModal, {
   type LinkAnalyticsLink,
 } from "@/components/link-analytics-modal";
-
-type LinkRow = {
-  id: string;
-  slug: string;
-  originalUrl: string;
-  clickCount: number;
-  clickCap: number | null;
-  isActive: boolean;
-  expiresAt: string | null;
-  scheduledAt: string | null;
-  createdByUserId: string;
-  createdByName: string | null;
-  createdAt: string;
-};
-
-const SLUG_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
-
-const RESERVED_SLUGS = new Set([
-  "login",
-  "orgs",
-  "api",
-  "not-found",
-  "manifest",
-  "favicon",
-  "_next",
-  "admin",
-  "dashboard",
-  "settings",
-  "profile",
-  "account",
-  "help",
-  "support",
-  "status",
-  "docs",
-  "terms",
-  "privacy",
-  "pricing",
-  "about",
-  "contact",
-  "blog",
-  "home",
-  "index",
-]);
-
-function randomSlug() {
-  let result = "";
-  for (let i = 0; i < 8; i++) {
-    result += SLUG_CHARS.charAt(Math.floor(Math.random() * SLUG_CHARS.length));
-  }
-  return result;
-}
-
-function isValidCustomSlug(value: string) {
-  return /^[a-z0-9][a-z0-9-]{0,48}[a-z0-9]$/.test(value);
-}
+import { useOrgLinks } from "@/hooks/use-org-links";
+import { isValidLinkSlug, randomSlug } from "@/lib/slugs";
+import type { LinkRow } from "@/types/links";
 
 export default function LinksPage() {
   const org = useOrganization();
   const router = useRouter();
 
-  const [links, setLinks] = useState<LinkRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { links, loading, refetch: fetchLinks } = useOrgLinks(org.slug);
 
   // ── Per-link analytics drawer ──
   const [analyticsLink, setAnalyticsLink] = useState<LinkAnalyticsLink | null>(null);
@@ -106,33 +54,14 @@ export default function LinksPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  const fetchLinks = useCallback(async () => {
-    try {
-      const res = await fetch(
-        `/api/links?organizationSlug=${org.slug}`,
-      );
-      if (res.ok) {
-        setLinks(await res.json());
-      }
-    } catch {
-      // silent
-    } finally {
-      setLoading(false);
-    }
-  }, [org.slug]);
-
-  useEffect(() => {
-    fetchLinks();
-  }, [fetchLinks]);
-
   const handleSlugChange = (value: string) => {
     setSlug(value);
-    if (value && !isValidCustomSlug(value)) {
+    if (value && !isValidLinkSlug(value)) {
       setSlugError(
         "Letters, numbers and hyphens only. Must start and end with a letter or number.",
       );
-    } else if (value && RESERVED_SLUGS.has(value)) {
-      setSlugError(`"${value}" is a reserved slug`);
+    } else if (value && isReservedSlug(value)) {
+      setSlugError(reservedSlugMessage(value));
     } else {
       setSlugError("");
     }

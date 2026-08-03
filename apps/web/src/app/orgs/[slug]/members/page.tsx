@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { RoleBadge } from "@/components/role-badge";
 import { authClient } from "@/lib/auth-client";
 import { useOrganization } from "@/context/organization-context";
+import { isAdminRole } from "@/lib/roles";
 import { Button } from "@LinkTrim/ui/components/button";
 import { Input } from "@LinkTrim/ui/components/input";
 import { Label } from "@LinkTrim/ui/components/label";
@@ -27,21 +29,6 @@ type MemberRow = {
   };
 };
 
-function RoleBadge({ role }: { role: string }) {
-  const elevated = role === "owner" || role === "admin";
-  return (
-    <span
-      className={`inline border px-2 py-0.5 font-mono text-xs ${
-        elevated
-          ? "border-chart-3/20 bg-chart-3/10 text-chart-3"
-          : "border-muted-foreground/20 bg-muted/50 text-muted-foreground"
-      }`}
-    >
-      {role}
-    </span>
-  );
-}
-
 export default function MembersPage() {
   const org = useOrganization();
   const { data: session } = authClient.useSession();
@@ -52,9 +39,7 @@ export default function MembersPage() {
   const currentUserMember = members.find(
     (m) => m.userId === session?.user?.id
   );
-  const isAdmin =
-    currentUserMember?.role === "owner" ||
-    currentUserMember?.role === "admin";
+  const isAdmin = isAdminRole(currentUserMember?.role ?? "");
 
   const [invitations, setInvitations] = useState<any[]>(
     org?.invitations?.filter((i: any) => i.status === "pending") ?? []

@@ -2,46 +2,11 @@ import { desc, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
 import { auth } from "@LinkTrim/auth";
+import { isReservedSlug, reservedSlugMessage } from "@LinkTrim/auth/reserved-slugs";
 import { db } from "@LinkTrim/db";
 import { user } from "@LinkTrim/db/schema/auth";
 import { link } from "@LinkTrim/db/schema/links";
-
-const SLUG_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
-
-const RESERVED_SLUGS = new Set([
-  "login",
-  "orgs",
-  "api",
-  "not-found",
-  "manifest",
-  "favicon",
-  "_next",
-  "admin",
-  "dashboard",
-  "settings",
-  "profile",
-  "account",
-  "help",
-  "support",
-  "status",
-  "docs",
-  "terms",
-  "privacy",
-  "pricing",
-  "about",
-  "contact",
-  "blog",
-  "home",
-  "index",
-]);
-
-function generateSlug(length = 8) {
-  let result = "";
-  for (let i = 0; i < length; i++) {
-    result += SLUG_CHARS.charAt(Math.floor(Math.random() * SLUG_CHARS.length));
-  }
-  return result;
-}
+import { isValidLinkSlug, randomSlug } from "@/lib/slugs";
 
 function isValidUrl(value: string) {
   try {
@@ -50,10 +15,6 @@ function isValidUrl(value: string) {
   } catch {
     return false;
   }
-}
-
-function isValidSlug(value: string) {
-  return /^[a-z0-9][a-z0-9-]{0,48}[a-z0-9]$/.test(value);
 }
 
 type InsertLink = typeof link.$inferInsert;
@@ -102,7 +63,7 @@ async function tryInsert(
         );
       }
 
-      return tryInsert({ ...data, slug: generateSlug() });
+      return tryInsert({ ...data, slug: randomSlug() });
     }
 
     return NextResponse.json({ error: "Failed to create link" }, { status: 500 });
@@ -145,7 +106,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (slug !== undefined) {
-    if (typeof slug !== "string" || !isValidSlug(slug)) {
+    if (typeof slug !== "string" || !isValidLinkSlug(slug)) {
       return NextResponse.json(
         {
           error:
@@ -155,14 +116,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (RESERVED_SLUGS.has(slug)) {
+    if (isReservedSlug(slug)) {
       return NextResponse.json(
-        { error: `"${slug}" is a reserved slug` },
+        { error: reservedSlugMessage(slug) },
         { status: 400 },
       );
     }
   } else {
-    slug = generateSlug();
+    slug = randomSlug();
   }
 
   const organization = await auth.api

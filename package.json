@@ -32,6 +32,7 @@
     "db:studio": "turbo run db:studio -F @LinkTrim/db",
     "db:generate": "turbo run db:generate -F @LinkTrim/db",
     "db:migrate": "turbo run db:migrate -F @LinkTrim/db",
+    "db:seed": "turbo run db:seed -F @LinkTrim/db",
     "db:start": "turbo run db:start -F @LinkTrim/db",
     "db:watch": "turbo run db:watch -F @LinkTrim/db",
     "db:stop": "turbo run db:stop -F @LinkTrim/db",
