@@ -7,6 +7,7 @@
       "dependencies": {
         "@LinkTrim/env": "workspace:*",
         "dotenv": "catalog:",
+        "recharts": "^3.10.1",
         "zod": "catalog:",
       },
       "devDependencies": {
