@@ -7,6 +7,15 @@ import OrgCard from "@/components/org-card";
 import CreateOrgDialog from "@/components/create-org-dialog";
 import { Button } from "@LinkTrim/ui/components/button";
 import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@LinkTrim/ui/components/card";
+import { Skeleton } from "@LinkTrim/ui/components/skeleton";
+import {
   Empty,
   EmptyHeader,
   EmptyTitle,
@@ -67,15 +76,23 @@ export default function Organization({
 
   const mappedOrganizations: Organization[] =
     organizations?.map((org) => {
-      const membership = (org as any).membership;
-      const role = membership?.role ?? "member";
+      // useListOrganizations returns members[] but no membership/membersCount
+      // fields — derive both from the members array.
+      const members = ((org as any).members ?? []) as {
+        userId: string;
+        role: string;
+      }[];
+      const role =
+        members.find((m) => m.userId === session.user.id)?.role ??
+        ((org as any).membership?.role as string | undefined) ??
+        "member";
       return {
         id: org.id,
         name: org.name,
         slug: org.slug,
         logoUrl: org.logo ?? undefined,
         createdAt: org.createdAt,
-        memberCount: (org as any).membersCount ?? 1,
+        memberCount: members.length || 1,
         currentUserRole: roleToUserRole(role),
       };
     }) ?? [];
@@ -140,8 +157,8 @@ export default function Organization({
           </h1>
 
           <p className="mt-1 text-xs text-muted-foreground">
-            Welcome back, {session.user.name}. Manage and route your brand
-            assets.
+            Welcome back, {session.user.name}. Manage your workspaces and
+            links.
           </p>
         </div>
 
@@ -172,28 +189,32 @@ export default function Organization({
       )}
 
       {!invitationsLoading && !invitationsError && pendingInvitations.length > 0 && (
-        <div className="border p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-semibold tracking-tight">
-                Pending Invitations
-              </h2>
-              <p className="mt-1 text-xs text-muted-foreground">
-                You&apos;ve been invited to join these organizations.
-              </p>
-            </div>
-            <Button variant="ghost" size="icon-sm" onClick={fetchInvitations} title="Refresh">
-              <RefreshCwIcon className="size-3.5" />
-            </Button>
-          </div>
-          <div className="mt-4 space-y-3">
+        <Card>
+          <CardHeader>
+            <CardTitle>Pending Invitations</CardTitle>
+            <CardDescription>
+              You&apos;ve been invited to join these organizations.
+            </CardDescription>
+            <CardAction>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={fetchInvitations}
+                title="Refresh"
+                aria-label="Refresh invitations"
+              >
+                <RefreshCwIcon className="size-3.5" />
+              </Button>
+            </CardAction>
+          </CardHeader>
+          <CardContent className="space-y-2">
             {pendingInvitations.map((inv) => (
               <div
                 key={inv.id}
-                className="flex items-center justify-between border p-3"
+                className="flex items-center justify-between gap-3 rounded-lg border bg-background p-3"
               >
-                <div>
-                  <p className="text-sm font-medium">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">
                     {inv.organizationName}
                   </p>
                   <p className="text-xs text-muted-foreground">
@@ -219,14 +240,16 @@ export default function Organization({
                 </Button>
               </div>
             ))}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {isPending ? (
-        <p className="text-sm text-muted-foreground">
-          Loading organizations...
-        </p>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {[...Array(3)].map((_, i) => (
+            <Skeleton key={i} className="h-36 rounded-xl" />
+          ))}
+        </div>
       ) : mappedOrganizations.length > 0 ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {mappedOrganizations.map((org) => (

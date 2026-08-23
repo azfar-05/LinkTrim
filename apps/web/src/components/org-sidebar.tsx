@@ -57,9 +57,18 @@ export default function OrgSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="border-b">
-        <div className="px-2 py-2">
-          <h2 className="font-semibold">{org.name}</h2>
-          <p className="text-xs text-muted-foreground">@{org.slug}</p>
+        <div className="flex items-center gap-2.5 px-2 py-2">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 font-semibold text-primary">
+            {org.name.charAt(0).toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <h2 className="truncate text-sm font-semibold leading-tight">
+              {org.name}
+            </h2>
+            <p className="truncate font-mono text-[10px] text-muted-foreground">
+              /{org.slug}
+            </p>
+          </div>
         </div>
       </SidebarHeader>
 

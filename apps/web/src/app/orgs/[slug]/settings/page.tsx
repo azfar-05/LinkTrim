@@ -15,10 +15,10 @@ import { Label } from "@LinkTrim/ui/components/label";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-} from "@LinkTrim/ui/components/card";
-import {
+} from "@LinkTrim/ui/components/card";import {
   Dialog,
   DialogPopup,
   DialogHeader,
@@ -178,67 +178,67 @@ export default function SettingsPage() {
         </Card>
       )}
 
-      <div className="border p-5">
-        <h2 className="text-sm font-semibold tracking-tight">
-          Your Membership
-        </h2>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          You are a member of this organization.
-        </p>
+      <Card>
+        <CardHeader>
+          <CardTitle>Your Membership</CardTitle>
+          <CardDescription>
+            You are a member of this organization.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Your role:</span>
+              <RoleBadge role={role} />
+            </div>
 
-        <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Your role:</span>
-            <RoleBadge role={role} />
+            {role === "member" && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setLeaveOpen(true)}
+              >
+                Leave organization
+              </Button>
+            )}
           </div>
 
-          {role === "member" && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setLeaveOpen(true)}
-            >
-              Leave organization
-            </Button>
+          {role === "admin" && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Admins can&apos;t leave an organization yet.
+            </p>
           )}
-        </div>
 
-        {role === "admin" && (
-          <p className="mt-2 text-[10px] text-muted-foreground">
-            Admins can&apos;t leave an organization yet.
-          </p>
-        )}
-
-        {isOwner && (
-          <p className="mt-2 text-[10px] text-muted-foreground">
-            Owners can&apos;t leave. Delete the organization instead.
-          </p>
-        )}
-      </div>
+          {isOwner && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Owners can&apos;t leave. Delete the organization instead.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {isOwner && (
-        <div className="border border-destructive/20 p-5">
-          <h2 className="text-sm font-semibold tracking-tight text-destructive">
-            Danger Zone
-          </h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Delete this organization, its links, and all click analytics. This
-            action cannot be undone.
-          </p>
-
-          <div className="mt-3">
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardHeader>
+            <CardTitle className="text-destructive">Danger Zone</CardTitle>
+            <CardDescription>
+              Delete this organization, its links, and all click analytics. This
+              action cannot be undone.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={() => setDeleteOpen(true)}
-              className="text-destructive hover:text-destructive"
+              className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
             >
               Delete organization
             </Button>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       <Dialog open={leaveOpen} onOpenChange={setLeaveOpen}>

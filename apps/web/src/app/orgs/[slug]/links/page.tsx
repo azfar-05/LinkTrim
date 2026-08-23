@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { BarChart2 } from "lucide-react";
+import { BarChart3, Loader2Icon } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@LinkTrim/ui/components/button";
@@ -136,7 +136,7 @@ export default function LinksPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">
             {submitError && (
-              <div className="border bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
                 {submitError}
               </div>
             )}
@@ -238,15 +238,23 @@ export default function LinksPage() {
       <div>
         <h2 className="text-lg font-semibold tracking-tight">
           All Links
+          {!loading && links.length > 0 && (
+            <span className="ml-1.5 text-sm font-normal text-muted-foreground">
+              ({links.length})
+            </span>
+          )}
         </h2>
         {loading ? (
-          <p className="mt-2 text-sm text-muted-foreground">Loading…</p>
+          <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2Icon className="size-4 animate-spin" />
+            Loading links…
+          </div>
         ) : links.length === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">
             No links yet. Create one above.
           </p>
         ) : (
-          <div className="mt-3 overflow-x-auto border">
+          <Card className="mt-3 overflow-x-auto py-0">
             <table className="w-full text-xs sm:text-sm">
               <thead>
                 <tr className="border-b bg-muted/50">
@@ -309,14 +317,14 @@ export default function LinksPage() {
                         aria-label={`View analytics for /${row.slug}`}
                         title="View analytics"
                       >
-                        <BarChart2 className="size-3.5" />
+                        <BarChart3 className="size-3.5" />
                       </Button>
                     </td>
                   </tr>
                 ))}
-              </tbody>
+                </tbody>
             </table>
-          </div>
+          </Card>
         )}
       </div>
 

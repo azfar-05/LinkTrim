@@ -14,6 +14,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@LinkTrim/ui/components/card";
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  XIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 
 type MemberRow = {
@@ -158,21 +163,20 @@ export default function MembersPage() {
       )}
 
       {isAdmin && invitations.length > 0 && (
-        <div className="border p-5">
-          <h2 className="text-sm font-semibold tracking-tight">
-            Pending Invitations
-            <span className="ml-1.5 text-muted-foreground">
-              ({invitations.length})
-            </span>
-          </h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Awaiting response from invitees.
-          </p>
-          <div className="mt-3 space-y-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              Pending Invitations
+              <span className="ml-1.5 font-normal text-muted-foreground">
+                ({invitations.length})
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
             {invitations.map((inv) => (
               <div
                 key={inv.id}
-                className="flex items-center justify-between border p-3 text-sm"
+                className="flex items-center justify-between rounded-lg border bg-background p-3 text-sm"
               >
                 <div>
                   <p className="font-medium">{inv.email}</p>
@@ -184,14 +188,15 @@ export default function MembersPage() {
                   variant="ghost"
                   size="sm"
                   onClick={() => handleCancelInvitation(inv.id)}
-                  className="text-destructive hover:text-destructive"
+                  className="gap-1 text-destructive hover:text-destructive"
                 >
+                  <XIcon className="size-3.5" />
                   Cancel
                 </Button>
               </div>
             ))}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       <div>
@@ -207,7 +212,7 @@ export default function MembersPage() {
         {members.length === 0 ? (
           <p className="mt-2 text-sm text-muted-foreground">No members.</p>
         ) : (
-          <div className="mt-3 overflow-x-auto border">
+          <Card className="mt-3 overflow-x-auto py-0">
             <table className="w-full text-xs sm:text-sm">
               <thead>
                 <tr className="border-b bg-muted/50">
@@ -234,12 +239,17 @@ export default function MembersPage() {
                 {members.map((member) => (
                   <tr key={member.id} className="border-b last:border-0">
                     <td className="px-4 py-3 font-medium">
-                      {member.user.name}
-                      {member.userId === session?.user?.id && (
-                        <span className="ml-1.5 text-xs text-muted-foreground">
-                          (you)
+                      <div className="flex items-center gap-2.5">
+                        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
+                          {member.user.name.charAt(0).toUpperCase()}
                         </span>
-                      )}
+                        {member.user.name}
+                        {member.userId === session?.user?.id && (
+                          <span className="text-xs font-normal text-muted-foreground">
+                            (you)
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
                       {member.user.email}
@@ -271,9 +281,11 @@ export default function MembersPage() {
                                   : "Demote to member"
                               }
                             >
-                              <span className="text-xs">
-                                {member.role === "member" ? "↑" : "↓"}
-                              </span>
+                              {member.role === "member" ? (
+                                <ArrowUpIcon className="size-3.5" />
+                              ) : (
+                                <ArrowDownIcon className="size-3.5" />
+                              )}
                             </Button>
                             <Button
                               variant="ghost"
@@ -284,7 +296,7 @@ export default function MembersPage() {
                               title="Remove member"
                               className="text-destructive hover:text-destructive"
                             >
-                              <span className="text-xs">&times;</span>
+                              <XIcon className="size-3.5" />
                             </Button>
                           </div>
                         )}
@@ -294,7 +306,7 @@ export default function MembersPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </Card>
         )}
       </div>
     </div>
