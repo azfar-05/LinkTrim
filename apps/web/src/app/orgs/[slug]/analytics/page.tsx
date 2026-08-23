@@ -1,178 +1,377 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowLeft, BarChart2, ExternalLink } from "lucide-react";
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import {
+  ArrowLeft,
+  BarChart2,
+  ExternalLink,
+  Eye,
+  Link2,
+  Loader2,
+  ShieldCheck,
+} from "lucide-react";
 
 import { Button } from "@LinkTrim/ui/components/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@LinkTrim/ui/components/card";
 import { useOrganization } from "@/context/organization-context";
-import AnalyticsCharts from "@/components/analytics-charts";
+import AnalyticsCharts, {
+  ClicksOverTimeCard,
+  CountriesCard,
+  DeviceBreakdownCard,
+  ReferrersCard,
+  StatCard,
+} from "@/components/analytics-charts";
 import { CopyButton } from "@/components/copy-button";
-import { getLinkAnalytics } from "@/components/link-analytics-modal";
+import { getLinkStatus, StatusBadge } from "@/components/status-badge";
+import { useAnalytics } from "@/hooks/use-analytics";
 import { useOrgLinks } from "@/hooks/use-org-links";
+import type {
+  LinkAnalytics,
+  OrgAnalytics,
+} from "@/types/analytics";
 import type { LinkRow } from "@/types/links";
 
 export default function AnalyticsPage() {
   const org = useOrganization();
-  const { links, loading } = useOrgLinks(org.slug);
+  const { links } = useOrgLinks(org.slug);
+  const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
 
-  // ── Selected Link State (for Full Page Analytics View) ──
-  const [selectedLink, setSelectedLink] = useState<LinkRow | null>(null);
+  const selectedLink = useMemo(
+    () => links.find((l) => l.id === selectedLinkId) ?? null,
+    [links, selectedLinkId],
+  );
 
-  // If a link is selected, render the Full-Page Analytics View
   if (selectedLink) {
-    const shortUrl = `${window.location.origin}/${selectedLink.slug}`;
-    const analyticsData = getLinkAnalytics(selectedLink.clickCount);
-
     return (
-      <div className="space-y-6">
-        {/* Navigation & Header bar */}
-        <div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-1.5 pl-0 hover:bg-transparent hover:text-primary text-muted-foreground transition-colors"
-            onClick={() => setSelectedLink(null)}
-          >
-            <ArrowLeft className="size-4" />
-            <span>Back to Links List</span>
-          </Button>
-        </div>
-
-        {/* Selected Link Metadata Header */}
-        <div className="rounded-lg border bg-card p-6 shadow-sm">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold tracking-tight">
-                  /{selectedLink.slug}
-                </h1>
-                <span className="text-xs font-mono px-2 py-0.5 rounded bg-muted text-muted-foreground">
-                  Active
-                </span>
-              </div>
-              <p className="text-sm text-muted-foreground truncate">
-                {selectedLink.originalUrl}
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-1.5 md:items-end text-xs text-muted-foreground">
-              <div className="flex items-center gap-1.5">
-                <span className="font-mono">{shortUrl}</span>
-                <CopyButton value={shortUrl} className="h-6 w-6" />
-                <a
-                  href={shortUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-foreground transition-colors p-1"
-                  title="Open link"
-                >
-                  <ExternalLink className="size-3.5" />
-                </a>
-              </div>
-              <div>
-                Created on {new Date(selectedLink.createdAt).toLocaleDateString()}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Full-width Analytics Charts */}
-        <AnalyticsCharts {...analyticsData} />
-      </div>
+      <LinkAnalyticsView
+        link={selectedLink}
+        onBack={() => setSelectedLinkId(null)}
+      />
     );
   }
 
-  // Links List View (default)
+  return (
+    <OrgDashboard orgSlug={org.slug} onViewLink={setSelectedLinkId} links={links} />
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Organization-wide dashboard (default view)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function OrgDashboard({
+  orgSlug,
+  onViewLink,
+  links,
+}: {
+  orgSlug: string;
+  onViewLink: (linkId: string) => void;
+  links: LinkRow[];
+}) {
+  const { data, loading, error } = useAnalytics(orgSlug);
+  const analytics = data as OrgAnalytics | null;
+
   return (
     <div className="space-y-6">
       {/* Page header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Analytics</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Select a link below to view its detailed performance analytics.
+          Performance across every link in this workspace.
         </p>
       </div>
 
-      {/* Links List Table */}
-      <div className="pt-2">
-        {loading ? (
-          <p className="text-sm text-muted-foreground py-4">Loading links list…</p>
-        ) : links.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-8 text-center bg-muted/20">
-            <p className="text-sm text-muted-foreground">
-              No links created in this workspace yet. Create links to view performance.
-            </p>
+      {loading ? (
+        <div className="flex items-center gap-2 py-12 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" />
+          Loading analytics…
+        </div>
+      ) : error || !analytics ? (
+        <div className="border bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          {error ?? "Failed to load analytics."}
+        </div>
+      ) : analytics.linkCount === 0 ? (
+        <div className="rounded-lg border border-dashed p-8 text-center bg-muted/20">
+          <p className="text-sm text-muted-foreground">
+            No links created in this workspace yet.{" "}
+            <Link
+              href={`/orgs/${orgSlug}/links`}
+              className="underline underline-offset-2 hover:text-foreground"
+            >
+              Create your first link
+            </Link>{" "}
+            to start collecting analytics.
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* KPI Row */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <StatCard
+              label="Total Clicks"
+              value={analytics.totalClicks}
+              subtitle="All visits excluding bots"
+            />
+            <StatCard
+              label="Unique Visitors"
+              value={analytics.uniqueClicks}
+              subtitle="Distinct IP addresses"
+            />
+            <StatCard
+              label="Total Links"
+              value={analytics.linkCount}
+              subtitle={`${analytics.activeLinkCount} currently active`}
+            />
+            <StatCard
+              label="Active Links"
+              value={analytics.activeLinkCount}
+              subtitle="Live and accepting clicks"
+            />
+            <StatCard
+              label="Filtered Bots"
+              value={analytics.botClicks}
+              subtitle="Crawler visits excluded"
+            />
           </div>
-        ) : (
-          <div className="overflow-x-auto border bg-card/50">
-            <table className="w-full text-xs sm:text-sm">
-              <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">
-                    Short URL
-                  </th>
-                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">
-                    Destination
-                  </th>
-                  <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">
-                    Clicks
-                  </th>
-                  <th className="hidden px-4 py-2.5 text-left font-medium text-muted-foreground sm:table-cell">
-                    Created
-                  </th>
-                  <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">
-                    <span className="sr-only">Actions</span>
-                  </th>
+
+          {/* Charts */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            <ClicksOverTimeCard
+              data={analytics.daily}
+              isEmpty={analytics.totalClicks === 0}
+            />
+            <DeviceBreakdownCard
+              data={analytics.devices}
+              isEmpty={analytics.totalClicks === 0}
+            />
+            <ReferrersCard
+              data={analytics.referrers}
+              isEmpty={analytics.totalClicks === 0}
+            />
+            <CountriesCard
+              data={analytics.countries}
+              isEmpty={analytics.totalClicks === 0}
+            />
+          </div>
+
+          {/* Top Links */}
+          <TopLinksCard links={links} onViewLink={onViewLink} />
+        </>
+      )}
+    </div>
+  );
+}
+
+function TopLinksCard({
+  links,
+  onViewLink,
+}: {
+  links: LinkRow[];
+  onViewLink: (linkId: string) => void;
+}) {
+  const ranked = [...links].sort((a, b) => b.clickCount - a.clickCount).slice(0, 5);
+
+  if (ranked.length === 0) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Top Links</CardTitle>
+        <CardDescription>Your 5 best performing short links</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs sm:text-sm">
+            <thead>
+              <tr className="border-b bg-muted/50">
+                <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">
+                  #
+                </th>
+                <th className="px-3 py-2.5 text-left font-medium text-muted-foreground">
+                  Short URL
+                </th>
+                <th className="hidden px-3 py-2.5 text-left font-medium text-muted-foreground sm:table-cell">
+                  Destination
+                </th>
+                <th className="px-3 py-2.5 text-right font-medium text-muted-foreground">
+                  Clicks
+                </th>
+                <th className="px-3 py-2.5 text-right font-medium text-muted-foreground">
+                  <span className="sr-only">Actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {ranked.map((row, idx) => (
+                <tr
+                  key={row.id}
+                  className="border-b last:border-0 hover:bg-muted/30 transition-colors"
+                >
+                  <td className="px-3 py-3 font-mono tabular-nums text-muted-foreground">
+                    {idx + 1}
+                  </td>
+                  <td className="px-3 py-3 font-mono text-xs sm:text-sm font-semibold text-foreground">
+                    /{row.slug}
+                  </td>
+                  <td className="hidden max-w-[220px] truncate px-3 py-3 text-muted-foreground sm:table-cell sm:max-w-xs">
+                    {row.originalUrl}
+                  </td>
+                  <td className="px-3 py-3 text-right font-mono font-medium tabular-nums">
+                    {row.clickCount.toLocaleString()}
+                  </td>
+                  <td className="px-3 py-3 text-right">
+                    <Button
+                      id={`top-analytics-btn-${row.id}`}
+                      variant="outline"
+                      size="xs"
+                      className="gap-1 h-7 text-xs font-medium"
+                      onClick={() => onViewLink(row.id)}
+                    >
+                      <BarChart2 className="size-3" />
+                      View Analytics
+                    </Button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {links.map((row) => {
-                  const shortUrl = `${window.location.origin}/${row.slug}`;
-                  return (
-                    <tr key={row.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3 font-mono text-xs sm:text-sm">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-semibold text-foreground">/{row.slug}</span>
-                          <a
-                            href={shortUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-muted-foreground hover:text-foreground transition-colors"
-                            title="Open short link"
-                          >
-                            <ExternalLink className="size-3" />
-                          </a>
-                        </div>
-                      </td>
-                      <td className="max-w-[220px] truncate px-4 py-3 text-muted-foreground sm:max-w-sm">
-                        {row.originalUrl}
-                      </td>
-                      <td className="px-4 py-3 text-right font-mono font-medium">
-                        {row.clickCount.toLocaleString()}
-                      </td>
-                      <td className="hidden px-4 py-3 text-muted-foreground sm:table-cell">
-                        {new Date(row.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <Button
-                          id={`analytics-detail-btn-${row.id}`}
-                          variant="outline"
-                          size="xs"
-                          className="gap-1 h-7 text-xs font-medium"
-                          onClick={() => setSelectedLink(row)}
-                        >
-                          <BarChart2 className="size-3" />
-                          View Analytics
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Per-link detail view
+// ─────────────────────────────────────────────────────────────────────────────
+
+function LinkAnalyticsView({
+  link,
+  onBack,
+}: {
+  link: LinkRow;
+  onBack: () => void;
+}) {
+  const org = useOrganization();
+  const { data, loading, error } = useAnalytics(org.slug, link.id);
+  const analytics = data as LinkAnalytics | null;
+  const status = getLinkStatus(link.isActive, link.expiresAt, link.scheduledAt);
+
+  // Click-cap usage bar (only when a cap is configured)
+  const capPct =
+    link.clickCap && link.clickCap > 0
+      ? Math.min(100, (link.clickCount / link.clickCap) * 100)
+      : null;
+
+  return (
+    <div className="space-y-6">
+      {/* Navigation */}
+      <div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="gap-1.5 pl-0 hover:bg-transparent hover:text-primary text-muted-foreground transition-colors"
+          onClick={onBack}
+        >
+          <ArrowLeft className="size-4" />
+          <span>Back to Overview</span>
+        </Button>
       </div>
+
+      {/* Link metadata header */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex flex-wrap items-center gap-2 text-xl font-bold tracking-tight">
+            <span className="font-mono">/{link.slug}</span>
+            <StatusBadge status={status} />
+          </CardTitle>
+          <CardDescription className="truncate max-w-xl">
+            {link.originalUrl}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono text-xs text-muted-foreground">
+                /{link.slug}
+              </span>
+              <CopyButton value={`/${link.slug}`} className="h-6 w-6" />
+              <a
+                href={`/${link.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                title="Open link"
+              >
+                <ExternalLink className="size-3.5" />
+              </a>
+            </div>
+
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <Link2 className="size-3.5" />
+                Created {new Date(link.createdAt).toLocaleDateString()}
+              </span>
+              {capPct !== null && (
+                <span className="inline-flex items-center gap-1.5">
+                  <Eye className="size-3.5" />
+                  <span className="font-mono tabular-nums">
+                    {link.clickCount.toLocaleString()} /{" "}
+                    {link.clickCap?.toLocaleString()} cap used
+                  </span>
+                </span>
+              )}
+              <span className="inline-flex items-center gap-1.5">
+                <ShieldCheck className="size-3.5" />
+                Bots filtered automatically
+              </span>
+            </div>
+          </div>
+
+          {capPct !== null && (
+            <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary"
+                style={{ width: `${Math.max(capPct, 1)}%` }}
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Full-width live analytics */}
+      {loading ? (
+        <div className="flex items-center gap-2 py-12 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" />
+          Loading analytics…
+        </div>
+      ) : error || !analytics ? (
+        <div className="border bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          {error ?? "Failed to load analytics."}
+        </div>
+      ) : (
+        <AnalyticsCharts
+          kpi={{
+            totalClicks: analytics.totalClicks,
+            uniqueClicks: analytics.uniqueClicks,
+            botClicks: analytics.botClicks,
+          }}
+          dailyActivity={analytics.daily}
+          deviceBreakdown={analytics.devices}
+          hourlyActivity={analytics.hourly}
+          weeklyActivity={analytics.weekly}
+          topReferrers={analytics.referrers}
+          topCountries={analytics.countries}
+          recentClicks={analytics.recent}
+        />
+      )}
     </div>
   );
 }

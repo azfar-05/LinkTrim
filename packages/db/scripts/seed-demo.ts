@@ -10,6 +10,7 @@ const {
   invitation,
 } = await import("@LinkTrim/db/schema/auth");
 const { link, click } = await import("@LinkTrim/db/schema/links");
+const { parseDevice } = await import("@LinkTrim/db/lib/user-agent");
 const { eq, inArray } = await import("drizzle-orm");
 
 const db = createDb();
@@ -308,6 +309,7 @@ for (const ls of LINK_SEEDS) {
       userAgent: pick.ua,
       referrer,
       isBot: pick.bot,
+      device: pick.bot ? null : parseDevice(pick.ua),
       country,
       timestamp: pickTimestamp(start, now.getTime()),
     });

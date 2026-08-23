@@ -54,7 +54,13 @@ export const click = pgTable(
     ip: text("ip"),
     userAgent: text("user_agent"),
     referrer: text("referrer"),
+    // Bot visits are kept for auditing but excluded from all metrics and
+    // never increment link.clickCount.
     isBot: boolean("is_bot").default(false).notNull(),
+    // Parsed from the user agent at insert time so device breakdowns group
+    // in SQL instead of re-parsing raw agents on every analytics request.
+    // One of: Mobile, Tablet, Desktop, TV, Other (null for bots/unknown).
+    device: text("device"),
     country: text("country"),
     timestamp: timestamp("timestamp").defaultNow().notNull(),
   },

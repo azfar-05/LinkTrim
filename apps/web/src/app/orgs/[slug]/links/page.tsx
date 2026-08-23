@@ -19,6 +19,7 @@ import { isReservedSlug, reservedSlugMessage } from "@LinkTrim/auth/reserved-slu
 import LinkAnalyticsModal, {
   type LinkAnalyticsLink,
 } from "@/components/link-analytics-modal";
+import { getLinkStatus, StatusBadge } from "@/components/status-badge";
 import { useOrgLinks } from "@/hooks/use-org-links";
 import { isValidLinkSlug, randomSlug } from "@/lib/slugs";
 import type { LinkRow } from "@/types/links";
@@ -37,9 +38,8 @@ export default function LinksPage() {
     setAnalyticsLink({
       id: row.id,
       title: `/${row.slug}`,
-      shortUrl: `${window.location.origin}/${row.slug}`,
+      shortUrl: `/${row.slug}`,
       originalUrl: row.originalUrl,
-      clickCount: row.clickCount,
     });
     setAnalyticsOpen(true);
   }
@@ -290,11 +290,11 @@ export default function LinksPage() {
                     </td>
                     <td className="hidden px-4 py-3 sm:table-cell">
                       <StatusBadge
-                        isActive={row.isActive}
-                        expired={
-                          row.expiresAt !== null &&
-                          new Date(row.expiresAt) < new Date()
-                        }
+                        status={getLinkStatus(
+                          row.isActive,
+                          row.expiresAt,
+                          row.scheduledAt,
+                        )}
                       />
                     </td>
                     <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
@@ -324,30 +324,9 @@ export default function LinksPage() {
       <LinkAnalyticsModal
         isOpen={analyticsOpen}
         onClose={() => setAnalyticsOpen(false)}
+        organizationSlug={org.slug}
         link={analyticsLink}
       />
     </div>
-  );
-}
-
-function StatusBadge({
-  isActive,
-  expired,
-}: {
-  isActive: boolean;
-  expired: boolean;
-}) {
-  if (expired) {
-    return (
-      <span className="font-mono text-xs text-muted-foreground">expired</span>
-    );
-  }
-  if (!isActive) {
-    return (
-      <span className="font-mono text-xs text-destructive">disabled</span>
-    );
-  }
-  return (
-    <span className="font-mono text-xs text-chart-3">active</span>
   );
 }
