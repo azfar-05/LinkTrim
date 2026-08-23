@@ -1,21 +1,41 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { BarChart3, Loader2Icon } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import {
+  BarChart3,
+  ChevronDownIcon,
+  ExternalLinkIcon,
+  LockIcon,
+  PowerIcon,
+  SearchIcon,
+  ShuffleIcon,
+} from "lucide-react";
 
 import { Button } from "@LinkTrim/ui/components/button";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@LinkTrim/ui/components/card";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@LinkTrim/ui/components/empty";
 import { Input } from "@LinkTrim/ui/components/input";
 import { Label } from "@LinkTrim/ui/components/label";
+import { Skeleton } from "@LinkTrim/ui/components/skeleton";
 import { useOrganization } from "@/context/organization-context";
 import { isReservedSlug, reservedSlugMessage } from "@LinkTrim/auth/reserved-slugs";
+import { authClient } from "@/lib/auth-client";
+import { isAdminRole } from "@/lib/roles";
+import { CopyButton } from "@/components/copy-button";
 import LinkAnalyticsModal, {
   type LinkAnalyticsLink,
 } from "@/components/link-analytics-modal";
@@ -26,9 +46,27 @@ import type { LinkRow } from "@/types/links";
 
 export default function LinksPage() {
   const org = useOrganization();
-  const router = useRouter();
+  const { data: session } = authClient.useSession();
 
-  const { links, loading, refetch: fetchLinks } = useOrgLinks(org.slug);
+  // Analytics visibility rule: owners/admins see every link's analytics,
+  // regular members only links they created. Mirrors server-side enforcement.
+  const canSeeAllAnalytics = isAdminRole(
+    org.members?.find(
+      (m: { userId: string; role: string }) =>
+        m.userId === session?.user?.id,
+    )?.role ?? "",
+  );
+  const canViewAnalytics = (row: LinkRow) =>
+    canSeeAllAnalytics || row.createdByUserId === session?.user?.id;
+
+  const { links, setLinks, loading, refetch: fetchLinks } = useOrgLinks(org.slug);
+
+  const [query, setQuery] = useState("");
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
 
   // ── Per-link analytics drawer ──
   const [analyticsLink, setAnalyticsLink] = useState<LinkAnalyticsLink | null>(null);
@@ -43,6 +81,47 @@ export default function LinksPage() {
     });
     setAnalyticsOpen(true);
   }
+
+  // ── Enable / disable ──
+  async function handleToggleActive(row: LinkRow) {
+    const next = !row.isActive;
+    setLinks((prev) =>
+      prev.map((l) => (l.id === row.id ? { ...l, isActive: next } : l)),
+    );
+
+    try {
+      const res = await fetch("/api/links", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          organizationSlug: org.slug,
+          linkId: row.id,
+          isActive: next,
+        }),
+      });
+
+      if (!res.ok) throw new Error();
+
+      toast.success(
+        next ? `/${row.slug} enabled` : `/${row.slug} disabled`,
+      );
+    } catch {
+      setLinks((prev) =>
+        prev.map((l) => (l.id === row.id ? { ...l, isActive: !next } : l)),
+      );
+      toast.error("Failed to update link");
+    }
+  }
+
+  const filteredLinks = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return links;
+    return links.filter(
+      (l) =>
+        l.slug.toLowerCase().includes(q) ||
+        l.originalUrl.toLowerCase().includes(q),
+    );
+  }, [links, query]);
 
   const [originalUrl, setOriginalUrl] = useState("");
   const [slug, setSlug] = useState("");
@@ -132,6 +211,9 @@ export default function LinksPage() {
       <Card>
         <CardHeader>
           <CardTitle>Create Link</CardTitle>
+          <CardDescription>
+            Shorten a destination URL. Leave the slug empty for a random one.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -157,12 +239,12 @@ export default function LinksPage() {
               <Label htmlFor="slug">Custom slug (optional)</Label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
-                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 font-mono text-xs text-muted-foreground">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-xs text-muted-foreground">
                     /
                   </span>
                   <Input
                     id="slug"
-                    className="pl-4"
+                    className="pl-6 font-mono"
                     placeholder="my-link"
                     value={slug}
                     onChange={(e) => handleSlugChange(e.target.value)}
@@ -171,13 +253,14 @@ export default function LinksPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="shrink-0"
+                  className="shrink-0 gap-1.5"
                   onClick={() => {
                     const s = randomSlug();
                     setSlug(s);
                     setSlugError("");
                   }}
                 >
+                  <ShuffleIcon className="size-3.5" />
                   Random
                 </Button>
               </div>
@@ -188,14 +271,18 @@ export default function LinksPage() {
 
             <button
               type="button"
-              className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+              aria-expanded={showAdvanced}
               onClick={() => setShowAdvanced(!showAdvanced)}
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
-              {showAdvanced ? "Hide" : "Show"} advanced options
+              Advanced options
+              <ChevronDownIcon
+                className={`size-3.5 transition-transform ${showAdvanced ? "rotate-180" : ""}`}
+              />
             </button>
 
             {showAdvanced && (
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-4 rounded-lg border bg-muted/30 p-4 sm:grid-cols-3">
                 <div className="space-y-2">
                   <Label htmlFor="clickCap">Click cap</Label>
                   <Input
@@ -228,38 +315,74 @@ export default function LinksPage() {
               </div>
             )}
 
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Creating…" : "Create Link"}
-            </Button>
+            <div className="flex justify-end">
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Creating…" : "Create Link"}
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
 
-      <div>
-        <h2 className="text-lg font-semibold tracking-tight">
-          All Links
+      <div className="space-y-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-lg font-semibold tracking-tight">
+            All Links
+            {!loading && links.length > 0 && (
+              <span className="ml-1.5 text-sm font-normal text-muted-foreground">
+                ({filteredLinks.length === links.length ? links.length : `${filteredLinks.length} of ${links.length}`})
+              </span>
+            )}
+          </h2>
           {!loading && links.length > 0 && (
-            <span className="ml-1.5 text-sm font-normal text-muted-foreground">
-              ({links.length})
-            </span>
+            <div className="relative w-full sm:w-64">
+              <SearchIcon className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search slug or URL…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="pl-8"
+              />
+            </div>
           )}
-        </h2>
+        </div>
+
         {loading ? (
-          <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2Icon className="size-4 animate-spin" />
-            Loading links…
-          </div>
+          <Card className="gap-0 py-0">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="flex items-center gap-4 border-b px-4 py-3.5 last:border-0">
+                <Skeleton className="h-4 w-24 rounded-md" />
+                <Skeleton className="h-4 flex-1 rounded-md" />
+                <Skeleton className="hidden h-4 w-16 rounded-md sm:block" />
+                <Skeleton className="hidden h-4 w-20 rounded-md md:block" />
+              </div>
+            ))}
+          </Card>
         ) : links.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">
-            No links yet. Create one above.
+          <Empty className="rounded-xl border border-dashed border-border bg-card/30 py-14">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <SearchIcon className="size-5" />
+              </EmptyMedia>
+              <EmptyTitle>No links yet</EmptyTitle>
+              <EmptyDescription>
+                Create your first short link above — it&apos;ll show up here
+                with live click analytics.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : filteredLinks.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            No links match “{query.trim()}”.
           </p>
         ) : (
-          <Card className="mt-3 overflow-x-auto py-0">
+          <Card className="overflow-x-auto py-0">
             <table className="w-full text-xs sm:text-sm">
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">
-                    Slug
+                    Short URL
                   </th>
                   <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">
                     Destination
@@ -270,59 +393,137 @@ export default function LinksPage() {
                   <th className="hidden px-4 py-2.5 text-left font-medium text-muted-foreground sm:table-cell">
                     Status
                   </th>
-                  <th className="hidden px-4 py-2.5 text-left font-medium text-muted-foreground md:table-cell">
+                  <th className="hidden px-4 py-2.5 text-left font-medium text-muted-foreground lg:table-cell">
                     Created
                   </th>
                   <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">
-                    <span className="sr-only">Analytics</span>
+                    <span className="sr-only">Actions</span>
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {links.map((row) => (
-                  <tr key={row.id} className="border-b last:border-0">
-                    <td className="px-4 py-3 font-mono text-xs sm:text-sm">
-                      {row.slug}
-                    </td>
-                    <td className="max-w-[200px] truncate px-4 py-3 text-muted-foreground sm:max-w-xs">
-                      {row.originalUrl}
-                    </td>
-                    <td className="px-4 py-3 text-right font-mono">
-                      {row.clickCount.toLocaleString()}
-                      {row.clickCap !== null && (
-                        <span className="text-muted-foreground">
-                          {" "}
-                          / {row.clickCap}
+                {filteredLinks.map((row) => {
+                  const status = getLinkStatus(
+                    row.isActive,
+                    row.expiresAt,
+                    row.scheduledAt,
+                  );
+                  const capped = row.clickCap !== null;
+                  const pct = capped
+                    ? Math.min(100, (row.clickCount / (row.clickCap as number)) * 100)
+                    : 0;
+
+                  return (
+                    <tr
+                      key={row.id}
+                      className="border-b transition-colors last:border-0 hover:bg-muted/40"
+                    >
+                      <td className="whitespace-nowrap px-4 py-3">
+                        <span className="inline-flex items-center gap-0.5">
+                          <code className="font-mono text-xs sm:text-sm">
+                            /{row.slug}
+                          </code>
+                          <CopyButton
+                            value={
+                              origin
+                                ? `${origin}/${row.slug}`
+                                : `/${row.slug}`
+                            }
+                          />
                         </span>
-                      )}
-                    </td>
-                    <td className="hidden px-4 py-3 sm:table-cell">
-                      <StatusBadge
-                        status={getLinkStatus(
-                          row.isActive,
-                          row.expiresAt,
-                          row.scheduledAt,
+                      </td>
+                      <td className="max-w-[180px] px-4 py-3 sm:max-w-xs">
+                        <a
+                          href={row.originalUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group/dest inline-flex max-w-full items-center gap-1 text-muted-foreground hover:text-foreground hover:underline"
+                          title={row.originalUrl}
+                        >
+                          <span className="truncate">{row.originalUrl}</span>
+                          <ExternalLinkIcon className="size-3 shrink-0 opacity-0 transition-opacity group-hover/dest:opacity-100" />
+                        </a>
+                      </td>
+                      <td className="px-4 py-3 text-right align-top">
+                        <span className="font-mono">
+                          {row.clickCount.toLocaleString()}
+                          {capped && (
+                            <span className="text-muted-foreground">
+                              {" "}
+                              / {row.clickCap}
+                            </span>
+                          )}
+                        </span>
+                        {capped && (
+                          <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-muted">
+                            <div
+                              className="h-full rounded-full bg-chart-3 transition-all"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
                         )}
-                      />
-                    </td>
-                    <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
-                      {new Date(row.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Button
-                        id={`analytics-btn-${row.id}`}
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => openLinkAnalytics(row)}
-                        aria-label={`View analytics for /${row.slug}`}
-                        title="View analytics"
-                      >
-                        <BarChart3 className="size-3.5" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-                </tbody>
+                      </td>
+                      <td className="hidden px-4 py-3 sm:table-cell">
+                        <StatusBadge status={status} />
+                      </td>
+                      <td className="hidden px-4 py-3 lg:table-cell">
+                        <div className="text-muted-foreground">
+                          {new Date(row.createdAt).toLocaleDateString()}
+                          {row.createdByName && (
+                            <div className="text-[11px]">
+                              by {row.createdByName}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => handleToggleActive(row)}
+                            aria-label={
+                              row.isActive
+                                ? `Disable /${row.slug}`
+                                : `Enable /${row.slug}`
+                            }
+                            title={
+                              row.isActive
+                                ? "Disable link"
+                                : "Enable link"
+                            }
+                            className={
+                              row.isActive
+                                ? "text-chart-3 hover:text-chart-3"
+                                : "text-muted-foreground"
+                            }
+                          >
+                            <PowerIcon className="size-3.5" />
+                          </Button>
+                          {canViewAnalytics(row) ? (
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() => openLinkAnalytics(row)}
+                              aria-label={`View analytics for /${row.slug}`}
+                              title="View analytics"
+                            >
+                              <BarChart3 className="size-3.5" />
+                            </Button>
+                          ) : (
+                            <span
+                              className="inline-flex size-7 items-center justify-center text-muted-foreground/40"
+                              title="Analytics are visible to the link creator and org admins only"
+                            >
+                              <LockIcon className="size-3.5" />
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
             </table>
           </Card>
         )}

@@ -21,6 +21,8 @@ import {
   CardTitle,
 } from "@LinkTrim/ui/components/card";
 import { useOrganization } from "@/context/organization-context";
+import { authClient } from "@/lib/auth-client";
+import { isAdminRole } from "@/lib/roles";
 import AnalyticsCharts, {
   ClicksOverTimeCard,
   CountriesCard,
@@ -40,12 +42,25 @@ import type { LinkRow } from "@/types/links";
 
 export default function AnalyticsPage() {
   const org = useOrganization();
+  const { data: session } = authClient.useSession();
   const { links } = useOrgLinks(org.slug);
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
 
+  // Analytics visibility rule: owners/admins see every link's analytics,
+  // regular members only links they created. Mirrors server-side enforcement.
+  const canSeeAll = isAdminRole(
+    org.members?.find(
+      (m: { userId: string; role: string }) =>
+        m.userId === session?.user?.id,
+    )?.role ?? "",
+  );
+  const viewableLinks = canSeeAll
+    ? links
+    : links.filter((l) => l.createdByUserId === session?.user?.id);
+
   const selectedLink = useMemo(
-    () => links.find((l) => l.id === selectedLinkId) ?? null,
-    [links, selectedLinkId],
+    () => viewableLinks.find((l) => l.id === selectedLinkId) ?? null,
+    [viewableLinks, selectedLinkId],
   );
 
   if (selectedLink) {
@@ -58,7 +73,12 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <OrgDashboard orgSlug={org.slug} onViewLink={setSelectedLinkId} links={links} />
+    <OrgDashboard
+      orgSlug={org.slug}
+      onViewLink={setSelectedLinkId}
+      links={viewableLinks}
+      scopedToMember={!canSeeAll}
+    />
   );
 }
 
@@ -70,10 +90,12 @@ function OrgDashboard({
   orgSlug,
   onViewLink,
   links,
+  scopedToMember,
 }: {
   orgSlug: string;
   onViewLink: (linkId: string) => void;
   links: LinkRow[];
+  scopedToMember: boolean;
 }) {
   const { data, loading, error } = useAnalytics(orgSlug);
   const analytics = data as OrgAnalytics | null;
@@ -84,7 +106,9 @@ function OrgDashboard({
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Analytics</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Performance across every link in this workspace.
+          {scopedToMember
+            ? "Performance across the links you created in this workspace."
+            : "Performance across every link in this workspace."}
         </p>
       </div>
 

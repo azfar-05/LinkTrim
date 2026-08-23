@@ -23,5 +23,5 @@ export function useOrgLinks(orgSlug: string) {
     fetchLinks();
   }, [fetchLinks]);
 
-  return { links, loading, refetch: fetchLinks };
+  return { links, setLinks, loading, refetch: fetchLinks };
 }

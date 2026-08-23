@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
 import { auth } from "@LinkTrim/auth";
@@ -273,4 +273,77 @@ export async function GET(request: NextRequest) {
       createdAt: r.createdAt.toISOString(),
     })),
   );
+}
+
+export async function PATCH(request: NextRequest) {
+  const session = await auth.api.getSession({
+    headers: request.headers,
+  });
+
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = (await request.json()) as Record<string, unknown>;
+  const { organizationSlug, linkId, isActive } = body;
+
+  if (!organizationSlug || typeof organizationSlug !== "string") {
+    return NextResponse.json(
+      { error: "organizationSlug is required" },
+      { status: 400 },
+    );
+  }
+
+  if (!linkId || typeof linkId !== "string") {
+    return NextResponse.json(
+      { error: "linkId is required" },
+      { status: 400 },
+    );
+  }
+
+  if (typeof isActive !== "boolean") {
+    return NextResponse.json(
+      { error: "isActive must be a boolean" },
+      { status: 400 },
+    );
+  }
+
+  const organization = await auth.api
+    .getFullOrganization({
+      headers: request.headers,
+      query: { organizationSlug },
+    })
+    .catch(() => null);
+
+  if (!organization) {
+    return NextResponse.json(
+      { error: "Organization not found" },
+      { status: 404 },
+    );
+  }
+
+  const member = organization.members?.find(
+    (m) => m.userId === session.user.id,
+  );
+
+  if (!member) {
+    return NextResponse.json(
+      { error: "You are not a member of this organization" },
+      { status: 403 },
+    );
+  }
+
+  // Scoped to the organization so members can never touch another
+  // tenant's links, even with a guessed id.
+  const [updated] = await db
+    .update(link)
+    .set({ isActive })
+    .where(and(eq(link.id, linkId), eq(link.organizationId, organization.id)))
+    .returning({ id: link.id, isActive: link.isActive });
+
+  if (!updated) {
+    return NextResponse.json({ error: "Link not found" }, { status: 404 });
+  }
+
+  return NextResponse.json(updated);
 }

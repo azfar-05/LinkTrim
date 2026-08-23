@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@LinkTrim/auth";
 import { db } from "@LinkTrim/db";
 import { click, link } from "@LinkTrim/db/schema/links";
+import { isAdminRole } from "@/lib/roles";
 import type {
   CountrySlice,
   DaySlice,
@@ -191,8 +192,9 @@ async function fetchRecentClicks(linkId: string): Promise<RecentClickSlice[]> {
   }));
 }
 
-async function getOrgAnalytics(organizationId: string): Promise<OrgAnalytics> {
-  const orgWhere = eq(link.organizationId, organizationId);
+async function getOrgAnalytics(
+  orgWhere: ReturnType<typeof and>,
+): Promise<OrgAnalytics> {
   const since = new Date(Date.now() - DAYS_OF_HISTORY * 86_400_000);
 
   const [totals, devices, daily, referrers, countries] = await Promise.all([
@@ -326,8 +328,29 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Owners and admins see analytics for every link in the organization.
+  // Regular members are limited to links they created themselves.
+  const canSeeAll = isAdminRole(member.role);
+
   try {
     if (linkId) {
+      const [found] = await db
+        .select({ id: link.id, createdById: link.createdById })
+        .from(link)
+        .where(and(eq(link.id, linkId), eq(link.organizationId, organization.id)))
+        .limit(1);
+
+      if (!found) {
+        return NextResponse.json({ error: "Link not found" }, { status: 404 });
+      }
+
+      if (!canSeeAll && found.createdById !== session.user.id) {
+        return NextResponse.json(
+          { error: "You can only view analytics for links you created" },
+          { status: 403 },
+        );
+      }
+
       const data = await getLinkAnalyticsData(organization.id, linkId);
       if (!data) {
         return NextResponse.json({ error: "Link not found" }, { status: 404 });
@@ -335,7 +358,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(data);
     }
 
-    return NextResponse.json(await getOrgAnalytics(organization.id));
+    const orgWhere = canSeeAll
+      ? eq(link.organizationId, organization.id)
+      : and(
+          eq(link.organizationId, organization.id),
+          eq(link.createdById, session.user.id),
+        );
+
+    return NextResponse.json(await getOrgAnalytics(orgWhere));
   } catch {
     return NextResponse.json(
       { error: "Failed to load analytics" },
