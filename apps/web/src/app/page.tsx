@@ -1,20 +1,25 @@
 import Link from "next/link";
-import { Link2 } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarClock,
+  Check,
+  Gauge,
+  Link2,
+  MousePointerClick,
+  ShieldCheck,
+  Sparkles,
+  Users,
+} from "lucide-react";
 
+import { AnalyticsPreview } from "@/components/analytics-preview";
 import { GetStartedButton } from "@/components/get-started-button";
-
-const linkRows = [
-  { slug: "summer-launch", clicks: "12,847", last: "Today, 9:41 AM" },
-  { slug: "deal-page", clicks: "1,892", last: "Yesterday, 3:15 PM" },
-  { slug: "abc123f", clicks: "4,561", last: "Jul 24, 2026" },
-  { slug: "internal-note", clicks: "312", last: "Jul 22, 2026" },
-  { slug: "launch-week", clicks: "8,923", last: "Jul 20, 2026" },
-];
+import { HeroDemo } from "@/components/hero-demo";
 
 export default function Home() {
   return (
     <main>
       <Hero />
+      <HowItWorks />
       <Features />
       <Analytics />
       <Roles />
@@ -23,98 +28,156 @@ export default function Home() {
   );
 }
 
+function DotTexture({ className = "" }: { className?: string }) {
+  return (
+    <div
+      aria-hidden
+      className={`pointer-events-none absolute inset-0 [background-image:radial-gradient(var(--color-muted-foreground)_1px,transparent_1px)] [background-size:22px_22px] opacity-[0.13] [mask-image:radial-gradient(ellipse_65%_65%_at_50%_45%,black,transparent)] ${className}`}
+    />
+  );
+}
+
 function Hero() {
   return (
-    <section className="relative overflow-hidden px-4 pb-16 pt-20 sm:pb-24 sm:pt-28">
-      <div className="absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,var(--color-primary)_0%,transparent_50%)] opacity-[0.03]" />
-      <div className="mx-auto max-w-3xl text-center">
-        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-          Short links for{" "}
-          <span className="text-chart-3">your team</span>
+    <section className="relative overflow-hidden px-4 pb-20 pt-16 sm:pb-24 sm:pt-20">
+      <DotTexture />
+
+      <div className="relative mx-auto max-w-3xl text-center">
+        <span className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs text-muted-foreground shadow-sm">
+          <Sparkles className="size-3 text-chart-3" />
+          Invite-only early access
+        </span>
+
+        <h1 className="mt-6 text-4xl font-bold tracking-tight text-balance sm:text-6xl">
+          Shorten everything.
+          <br />
+          <span className="text-chart-3">Track what matters.</span>
         </h1>
-        <p className="mx-auto mt-6 max-w-xl text-base text-muted-foreground sm:text-lg">
-          Invite-only URL shortener with custom slugs, per-click analytics, and
-          role-based access — one shared workspace for your organization.
+
+        <p className="mx-auto mt-5 max-w-xl text-pretty text-base text-muted-foreground sm:text-lg">
+          An invite-only URL shortener for teams — custom slugs, click caps,
+          and bot-free analytics in one shared workspace.
         </p>
+
         <div className="mt-8">
           <GetStartedButton />
         </div>
+      </div>
+
+      <div className="relative">
+        <HeroDemo />
       </div>
     </section>
   );
 }
 
+const STEPS = [
+  {
+    title: "Paste",
+    desc: "Drop in any long URL — campaigns, checkouts, docs.",
+    visual: "https://example.com/campaigns/summer?utm…",
+    accent: false,
+  },
+  {
+    title: "Trim",
+    desc: "Pick a slug your team will remember, or roll a random one.",
+    visual: "→ /sale",
+    accent: true,
+  },
+  {
+    title: "Share",
+    desc: "Watch clean, bot-free click data land in your dashboard.",
+    visual: "linktrim.app/sale",
+    accent: true,
+  },
+];
+
+function HowItWorks() {
+  return (
+    <section className="border-t px-4 py-16 sm:py-20">
+      <div className="mx-auto grid max-w-4xl gap-8 sm:grid-cols-3 sm:gap-6">
+        {STEPS.map((step, i) => (
+          <div key={step.title} className="relative">
+            <div className="flex items-center gap-2.5">
+              <h3 className="font-semibold">{step.title}</h3>
+              {i < STEPS.length - 1 && (
+                <ArrowRight
+                  className="hidden size-3.5 text-muted-foreground/50 sm:inline"
+                  aria-hidden
+                />
+              )}
+            </div>
+            <p
+              className={`mt-1.5 inline-block max-w-full truncate rounded-md border px-2 py-1 font-mono text-xs ${
+                step.accent
+                  ? "border-chart-3/30 bg-chart-3/10 text-chart-3"
+                  : "bg-muted/40 text-muted-foreground"
+              }`}
+            >
+              {step.visual}
+            </p>
+            <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
+              {step.desc}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+const FEATURE_ROWS = [
+  {
+    icon: Link2,
+    title: "Custom & random slugs",
+    desc: "Pick a memorable slug like /sale or let LinkTrim generate one. Slug collisions are handled automatically — you always get a working link.",
+  },
+  {
+    icon: CalendarClock,
+    title: "Scheduled & expiring",
+    desc: "Links activate and retire on dates you choose. Campaigns run themselves; nothing to remember at launch or teardown.",
+  },
+  {
+    icon: Gauge,
+    title: "Click caps",
+    desc: "Limit total clicks per link for limited offers. The link disables itself the moment the cap is reached — atomically, no oversell.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Bot-filtered analytics",
+    desc: "Every visit is classified at redirect time. Crawler traffic is recorded but kept out of your numbers, so what you see is what people clicked.",
+  },
+];
+
 function Features() {
   return (
-    <section className="border-t px-4 py-20 sm:py-28">
-      <div className="mx-auto max-w-5xl">
-        <h2 className="text-center text-3xl font-bold tracking-tight sm:text-4xl">
-          What you get
+    <section className="border-t px-4 py-20 sm:py-24">
+      <div className="mx-auto max-w-3xl">
+        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          Built-in, not bolted on
         </h2>
-        <div className="mt-12 grid gap-16 lg:grid-cols-5">
-          <div className="lg:col-span-3">
-            <div className="border p-6">
-              <div className="flex items-start gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center border bg-chart-3/10">
-                  <Link2 className="h-5 w-5 text-chart-3" />
-                </div>
-                <div>
-                  <h3 className="font-semibold">Custom & random slugs</h3>
-                  <p className="mt-1.5 text-sm text-muted-foreground">
-                    Choose a memorable slug like{" "}
-                    <span className="font-mono text-foreground">
-                      localhost:3001/sale
-                    </span>{" "}
-                    or let LinkTrim generate a random one. Expiring, scheduled,
-                    and click-capped links built in.
-                  </p>
-                </div>
+        <p className="mt-3 max-w-md text-sm text-muted-foreground">
+          The controls most shorteners hide behind upgrades are part of every
+          link you create.
+        </p>
+
+        <div className="mt-10 divide-y border-y">
+          {FEATURE_ROWS.map((row) => (
+            <div
+              key={row.title}
+              className="group flex gap-5 py-7 transition-colors"
+            >
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-chart-3/10 transition-colors group-hover:bg-chart-3/15">
+                <row.icon className="size-4 text-chart-3" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-semibold">{row.title}</h3>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  {row.desc}
+                </p>
               </div>
             </div>
-          </div>
-          <div className="lg:col-span-2">
-            <ul className="space-y-4">
-              <li className="flex items-start gap-3">
-                <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-chart-3" />
-                <div>
-                  <span className="font-medium">Scheduled & expiring</span>
-                  <p className="mt-0.5 text-sm text-muted-foreground">
-                    Set links to activate or expire on specific dates.
-                  </p>
-                </div>
-              </li>
-              <li className="flex items-start gap-3">
-                <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-chart-3" />
-                <div>
-                  <span className="font-medium">Click-cap enforcement</span>
-                  <p className="mt-0.5 text-sm text-muted-foreground">
-                    Limit total clicks per link. Auto-disable when the cap is
-                    reached.
-                  </p>
-                </div>
-              </li>
-              <li className="flex items-start gap-3">
-                <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-chart-3" />
-                <div>
-                  <span className="font-medium">Bot-filtered analytics</span>
-                  <p className="mt-0.5 text-sm text-muted-foreground">
-                    Every click is cleaned in real time — bot traffic is
-                    detected and excluded.
-                  </p>
-                </div>
-              </li>
-              <li className="flex items-start gap-3">
-                <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-chart-3" />
-                <div>
-                  <span className="font-medium">Recharts dashboard</span>
-                  <p className="mt-0.5 text-sm text-muted-foreground">
-                    Interactive charts for clicks over time, top links, and
-                    member breakdowns.
-                  </p>
-                </div>
-              </li>
-            </ul>
-          </div>
+          ))}
         </div>
       </div>
     </section>
@@ -123,107 +186,101 @@ function Features() {
 
 function Analytics() {
   return (
-    <section className="border-t px-4 py-20 sm:py-28">
+    <section className="border-t bg-muted/30 px-4 py-20 sm:py-24">
       <div className="mx-auto max-w-5xl">
-        <h2 className="text-center text-3xl font-bold tracking-tight sm:text-4xl">
-          Per-click data, no noise
-        </h2>
-        <p className="mx-auto mt-4 max-w-xl text-center text-muted-foreground">
-          Every click logs device, referrer, and location. Bots are stripped
-          automatically so your numbers stay honest.
-        </p>
-        <div className="mt-10 overflow-hidden border">
-          <table className="w-full text-xs sm:text-sm">
-            <thead>
-              <tr className="border-b bg-muted/50">
-                <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">
-                  Short link
-                </th>
-                <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">
-                  Clicks
-                </th>
-                <th className="hidden px-4 py-2.5 text-right font-medium text-muted-foreground sm:table-cell">
-                  Last click
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {linkRows.map((row) => (
-                <tr key={row.slug} className="border-b last:border-0">
-                  <td className="px-4 py-3 font-mono text-xs sm:text-sm">
-                    localhost:3001/{row.slug}
-                  </td>
-                  <td className="px-4 py-3 text-right font-mono text-xs sm:text-sm">
-                    {row.clicks}
-                  </td>
-                  <td className="hidden px-4 py-3 text-right text-muted-foreground sm:table-cell">
-                    {row.last}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="mx-auto max-w-2xl text-center">
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            Per-click data, no noise
+          </h2>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Devices, referrers, countries, and peak hours — computed live from
+            real visits, not sampled estimates.
+          </p>
+        </div>
+
+        <div className="mt-12">
+          <AnalyticsPreview />
         </div>
       </div>
     </section>
   );
 }
 
+const ROLES = [
+  {
+    badge: "admin",
+    icon: ShieldCheck,
+    active: true,
+    perms: [
+      "All links in the organization",
+      "Per-member analytics breakdown",
+      "Manage settings & invite members",
+    ],
+  },
+  {
+    badge: "member",
+    icon: Users,
+    active: false,
+    perms: ["Own links only", "Personal click analytics"],
+  },
+];
+
 function Roles() {
   return (
-    <section className="border-t px-4 py-20 sm:py-28">
+    <section className="border-t px-4 py-20 sm:py-24">
       <div className="mx-auto max-w-3xl">
-        <h2 className="text-center text-3xl font-bold tracking-tight sm:text-4xl">
-          Two roles, one workspace
-        </h2>
-        <p className="mx-auto mt-4 max-w-lg text-center text-muted-foreground">
-          Every member belongs to the same organization. What you see depends
-          on your role.
-        </p>
-        <div className="mt-10 grid sm:grid-cols-2">
-          <div className="border-r-0 border p-6 sm:border-r">
-            <div className="inline border bg-chart-3/10 px-2 py-0.5 font-mono text-xs text-chart-3">
-              admin
-            </div>
-            <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 text-chart-3">&#10003;</span>
-                All links in the organization
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 text-chart-3">&#10003;</span>
-                Per-member analytics breakdown
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 text-chart-3">&#10003;</span>
-                Manage settings & invite members
-              </li>
-            </ul>
-          </div>
-          <div className="border p-6">
-            <div className="inline border bg-muted/50 px-2 py-0.5 font-mono text-xs text-muted-foreground">
-              member
-            </div>
-            <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 text-chart-3">&#10003;</span>
-                Own links only
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 text-chart-3">&#10003;</span>
-                Personal click analytics
-              </li>
-              <li className="flex items-start gap-2 text-muted-foreground/50">
-                <span className="mt-0.5">&mdash;</span>
-                Cannot see other members&apos; links
-              </li>
-            </ul>
-          </div>
+        <div className="text-center">
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            Two roles, one workspace
+          </h2>
+          <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
+            Everyone shares the same organization. What you see depends on
+            your role.
+          </p>
         </div>
+
+        <div className="mt-12 grid gap-4 sm:grid-cols-2">
+          {ROLES.map((role) => (
+            <div
+              key={role.badge}
+              className={`rounded-xl border p-6 shadow-sm ring-1 ring-foreground/10 ${
+                role.active ? "bg-card" : "bg-card/50"
+              }`}
+            >
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-xs ${
+                  role.active
+                    ? "border-chart-3/30 bg-chart-3/10 text-chart-3"
+                    : "bg-muted/50 text-muted-foreground"
+                }`}
+              >
+                <role.icon className="size-3" />
+                {role.badge}
+              </span>
+              <ul className="mt-5 space-y-2.5 text-sm">
+                {role.perms.map((perm) => (
+                  <li
+                    key={perm}
+                    className="flex items-start gap-2 text-muted-foreground"
+                  >
+                    <Check className="mt-0.5 size-3.5 shrink-0 text-chart-3" />
+                    {perm}
+                  </li>
+                ))}
+                {!role.active && (
+                  <li className="flex items-start gap-2 text-muted-foreground/50">
+                    <span className="mt-0.5">&mdash;</span>
+                    Cannot see other members&apos; links
+                  </li>
+                )}
+              </ul>
+            </div>
+          ))}
+        </div>
+
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          Access is invite-only. New members are assigned the{" "}
-          <span className="font-mono text-foreground">member</span> role by
-          default.
+          Access is invite-only. New members join as{" "}
+          <span className="font-mono text-foreground">member</span> by default.
         </p>
       </div>
     </section>
@@ -233,28 +290,33 @@ function Roles() {
 function CTAFooter() {
   return (
     <footer>
-      <section className="border-t px-4 py-20 sm:py-28">
-        <div className="mx-auto max-w-3xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Ready to start?
+      <section className="px-4 pb-20 pt-4 sm:pb-24">
+        <div className="relative mx-auto max-w-4xl overflow-hidden rounded-xl border bg-card px-6 py-16 text-center shadow-sm ring-1 ring-foreground/10 sm:py-20">
+          <DotTexture />
+          <MousePointerClick className="relative mx-auto size-6 text-chart-3" />
+          <h2 className="relative mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
+            Your next link is one paste away
           </h2>
-          <p className="mt-4 text-muted-foreground">
-            LinkTrim is invite-only. Request access or sign in if you&apos;re
-            already a member.
+          <p className="relative mx-auto mt-3 max-w-md text-sm text-muted-foreground sm:text-base">
+            Request access, or sign in if you&apos;re already a member.
           </p>
-          <div className="mt-8">
+          <div className="relative mt-8">
             <GetStartedButton />
           </div>
         </div>
       </section>
+
       <div className="border-t px-4 py-8">
         <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-4 sm:flex-row">
-          <div className="flex items-center gap-2 text-sm font-semibold">
-            <Link2 className="h-4 w-4" />
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-sm font-semibold"
+          >
+            <Link2 className="size-4" />
             <span>LinkTrim</span>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} LinkTrim.
+          </Link>
+          <p className="font-mono text-xs text-muted-foreground">
+            &copy; {new Date().getFullYear()} LinkTrim
           </p>
         </div>
       </div>
