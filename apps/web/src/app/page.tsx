@@ -63,7 +63,7 @@ function Features() {
                   <p className="mt-1.5 text-sm text-muted-foreground">
                     Choose a memorable slug like{" "}
                     <span className="font-mono text-foreground">
-                      linktrim.to/sale
+                      localhost:3001/sale
                     </span>{" "}
                     or let LinkTrim generate a random one. Expiring, scheduled,
                     and click-capped links built in.
@@ -151,7 +151,7 @@ function Analytics() {
               {linkRows.map((row) => (
                 <tr key={row.slug} className="border-b last:border-0">
                   <td className="px-4 py-3 font-mono text-xs sm:text-sm">
-                    linktrim.to/{row.slug}
+                    localhost:3001/{row.slug}
                   </td>
                   <td className="px-4 py-3 text-right font-mono text-xs sm:text-sm">
                     {row.clicks}

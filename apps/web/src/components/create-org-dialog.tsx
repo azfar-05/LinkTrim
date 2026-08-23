@@ -178,7 +178,7 @@ export default function CreateOrgDialog({
 
               <div className="flex items-center">
                 <span className="inline-flex h-8 select-none items-center border border-r-0 border-input bg-muted px-2.5 font-mono text-[10px] text-muted-foreground">
-                  linktrim.to/
+                  /orgs/
                 </span>
 
                 <Input
