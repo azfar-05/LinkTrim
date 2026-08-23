@@ -39,13 +39,13 @@ function DialogPopup({
       <DialogBackdrop />
       <DialogPrimitive.Popup
         className={cn(
-          "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-border bg-background p-6 shadow-lg duration-150 data-[open]:animate-in data-[open]:fade-in-0 data-[open]:zoom-in-98 data-[open]:slide-in-from-left-1/2 data-[open]:slide-in-from-top-1/2 data-[closed]:animate-out data-[closed]:fade-out-0 data-[closed]:zoom-out-98 data-[closed]:slide-out-to-left-1/2 data-[closed]:slide-out-to-top-1/2 rounded-none ring-1 ring-foreground/10 outline-none",
+          "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-border bg-background p-6 shadow-lg duration-150 data-[open]:animate-in data-[open]:fade-in-0 data-[open]:zoom-in-98 data-[open]:slide-in-from-left-1/2 data-[open]:slide-in-from-top-1/2 data-[closed]:animate-out data-[closed]:fade-out-0 data-[closed]:zoom-out-98 data-[closed]:slide-out-to-left-1/2 data-[closed]:slide-out-to-top-1/2 rounded-xl ring-1 ring-foreground/10 outline-none",
           className
         )}
         {...props}
       >
         {children}
-        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-none opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-1 focus:ring-ring disabled:pointer-events-none p-1">
+        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-1 focus:ring-ring disabled:pointer-events-none p-1">
           <XIcon className="size-4" />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>
