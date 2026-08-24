@@ -7,6 +7,7 @@ import { db } from "@LinkTrim/db";
 import { user } from "@LinkTrim/db/schema/auth";
 import { link } from "@LinkTrim/db/schema/links";
 import { isValidLinkSlug, randomSlug } from "@/lib/slugs";
+import { isAdminRole } from "@/lib/roles";
 
 function isValidUrl(value: string) {
   try {
@@ -331,6 +332,27 @@ export async function PATCH(request: NextRequest) {
       { error: "You are not a member of this organization" },
       { status: 403 },
     );
+  }
+
+  // Same rule as analytics visibility: owners/admins manage every link in
+  // the organization; regular members only links they created.
+  if (!isAdminRole(member.role)) {
+    const [existing] = await db
+      .select({ createdById: link.createdById })
+      .from(link)
+      .where(and(eq(link.id, linkId), eq(link.organizationId, organization.id)))
+      .limit(1);
+
+    if (!existing) {
+      return NextResponse.json({ error: "Link not found" }, { status: 404 });
+    }
+
+    if (existing.createdById !== session.user.id) {
+      return NextResponse.json(
+        { error: "Only the link creator or org admins can modify this link" },
+        { status: 403 },
+      );
+    }
   }
 
   // Scoped to the organization so members can never touch another
