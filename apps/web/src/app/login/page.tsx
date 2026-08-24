@@ -26,7 +26,7 @@ export default function LoginPage() {
         <span className="text-lg font-semibold tracking-tight">LinkTrim</span>
       </Link>
 
-      <Card className="w-full max-w-md shadow-sm">
+      <Card className="w-full max-w-md shadow-sm ring-1 ring-foreground/5">
         <CardHeader className="items-center text-center">
           <CardTitle className="text-xl font-semibold tracking-tight">
             {showSignIn ? "Welcome back" : "Create your account"}

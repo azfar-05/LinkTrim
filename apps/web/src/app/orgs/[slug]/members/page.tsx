@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { RoleBadge } from "@/components/role-badge";
 import { authClient } from "@/lib/auth-client";
 import { useOrganization } from "@/context/organization-context";
+import type { OrganizationInvitation } from "@/context/organization-context";
 import { isAdminRole } from "@/lib/roles";
 import { Button } from "@LinkTrim/ui/components/button";
 import { Input } from "@LinkTrim/ui/components/input";
@@ -17,6 +18,7 @@ import {
 import {
   ArrowDownIcon,
   ArrowUpIcon,
+  UserPlusIcon,
   XIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -41,14 +43,30 @@ export default function MembersPage() {
   const [email, setEmail] = useState("");
   const [inviting, setInviting] = useState(false);
 
+  // Re-sync when the organization context changes (e.g. navigation or a
+  // refetch elsewhere) instead of keeping a permanently stale copy.
+  useEffect(() => {
+    if (org?.members) {
+      setMembers(org.members as MemberRow[]);
+    }
+  }, [org?.members]);
+
+  const [invitations, setInvitations] = useState<OrganizationInvitation[]>(
+    org?.invitations?.filter((i) => i.status === "pending") ?? []
+  );
+
+  useEffect(() => {
+    if (org?.invitations) {
+      setInvitations(
+        org.invitations.filter((i) => i.status === "pending")
+      );
+    }
+  }, [org?.invitations]);
+
   const currentUserMember = members.find(
     (m) => m.userId === session?.user?.id
   );
   const isAdmin = isAdminRole(currentUserMember?.role ?? "");
-
-  const [invitations, setInvitations] = useState<any[]>(
-    org?.invitations?.filter((i: any) => i.status === "pending") ?? []
-  );
 
   const refreshMembers = async () => {
     try {
@@ -60,9 +78,10 @@ export default function MembersPage() {
       if (data?.members) setMembers(data.members as MemberRow[]);
       if (data?.invitations)
         setInvitations(
-          data.invitations.filter((i: any) => i.status === "pending")
-        );
-    } catch {
+          (
+            data.invitations as OrganizationInvitation[]
+          ).filter((i) => i.status === "pending")
+        );    } catch {
       // silent
     }
   };
@@ -128,10 +147,31 @@ export default function MembersPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Members</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          Members<span className="text-chart-3">.</span>
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Manage members of your organization.
         </p>
+
+        {members.length > 0 || invitations.length > 0 ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2 font-mono text-[11px] tabular-nums text-muted-foreground">
+            <span className="rounded-md border bg-muted/40 px-2 py-0.5">
+              {members.length} {members.length === 1 ? "member" : "members"}
+            </span>
+            <span className="rounded-md border bg-muted/40 px-2 py-0.5">
+              {members.filter((m) => isAdminRole(m.role)).length}{" "}
+              {members.filter((m) => isAdminRole(m.role)).length === 1
+                ? "admin"
+                : "admins"}
+            </span>
+            {invitations.length > 0 && (
+              <span className="rounded-md border border-chart-3/30 bg-chart-3/10 px-2 py-0.5 text-chart-3">
+                {invitations.length} pending
+              </span>
+            )}
+          </div>
+        ) : null}
       </div>
 
       {isAdmin && (
@@ -154,7 +194,8 @@ export default function MembersPage() {
                   required
                 />
               </div>
-              <Button type="submit" disabled={inviting}>
+              <Button type="submit" disabled={inviting} className="gap-1.5">
+                <UserPlusIcon className="size-4" />
                 {inviting ? "Inviting…" : "Invite"}
               </Button>
             </form>

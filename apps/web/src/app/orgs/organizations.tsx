@@ -41,12 +41,47 @@ export default function Organization({
   const [invitationsLoading, setInvitationsLoading] = useState(true);
   const [invitationsError, setInvitationsError] = useState<string | null>(null);
 
-  const {
-    data: organizations,
-    error,
-    isPending,
-    refetch,
-  } = authClient.useListOrganizations();
+  const [organizations, setOrganizations] = useState<
+        | {
+            id: string;
+            name: string;
+            slug: string;
+            logo: string | null;
+            createdAt: string;
+            currentUserRole: string;
+            memberCount: number;
+          }[]
+        | null
+      >(null);
+  const [isPending, setIsPending] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchOrganizations = useCallback(async () => {
+    setIsPending(true);
+    setError(null);
+    try {
+      // Dedicated endpoint: /organization/list omits member counts and the
+      // viewer's role, so real numbers come from our own tables.
+      const res = await fetch("/api/organizations", {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        setError(`Failed to load organizations (${res.status})`);
+        return;
+      }
+      setOrganizations(await res.json());
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to load organizations",
+      );
+    } finally {
+      setIsPending(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOrganizations();
+  }, [fetchOrganizations]);
 
   const fetchInvitations = useCallback(async () => {
     setInvitationsLoading(true);
@@ -75,27 +110,15 @@ export default function Organization({
   }, [fetchInvitations]);
 
   const mappedOrganizations: Organization[] =
-    organizations?.map((org) => {
-      // useListOrganizations returns members[] but no membership/membersCount
-      // fields — derive both from the members array.
-      const members = ((org as any).members ?? []) as {
-        userId: string;
-        role: string;
-      }[];
-      const role =
-        members.find((m) => m.userId === session.user.id)?.role ??
-        ((org as any).membership?.role as string | undefined) ??
-        "member";
-      return {
-        id: org.id,
-        name: org.name,
-        slug: org.slug,
-        logoUrl: org.logo ?? undefined,
-        createdAt: org.createdAt,
-        memberCount: members.length || 1,
-        currentUserRole: roleToUserRole(role),
-      };
-    }) ?? [];
+    organizations?.map((org) => ({
+      id: org.id,
+      name: org.name,
+      slug: org.slug,
+      logoUrl: org.logo ?? undefined,
+      createdAt: org.createdAt,
+      memberCount: org.memberCount,
+      currentUserRole: roleToUserRole(org.currentUserRole),
+    })) ?? [];
 
   const pendingInvitations = invitations.filter(
     (inv) => inv.status === "pending"
@@ -122,7 +145,7 @@ export default function Organization({
 
     setIsCreateOpen(false);
 
-    await refetch();
+    await fetchOrganizations();
   };
 
   const handleAcceptInvitation = async (invitationId: string) => {
@@ -134,16 +157,23 @@ export default function Organization({
       return;
     }
     toast.success("Invitation accepted!");
-    await refetch();
+    await fetchOrganizations();
     await fetchInvitations();
   };
 
   if (error) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-8">
-        <p className="text-sm text-destructive">
-          Failed to load organizations.
-        </p>
+        <p className="text-sm text-destructive">{error}</p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-3 gap-1.5"
+          onClick={fetchOrganizations}
+        >
+          <RefreshCwIcon className="size-3" />
+          Retry
+        </Button>
       </div>
     );
   }
@@ -152,8 +182,11 @@ export default function Organization({
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 md:py-12">
       <div className="flex flex-col gap-4 border-b border-border/50 pb-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
-            Your Organizations
+          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            Workspaces
+          </p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+            Your Organizations<span className="text-chart-3">.</span>
           </h1>
 
           <p className="mt-1 text-xs text-muted-foreground">

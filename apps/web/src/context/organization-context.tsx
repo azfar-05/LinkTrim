@@ -2,7 +2,35 @@
 
 import { createContext, useContext } from "react";
 
-export type OrganizationContextType = any;
+export interface OrganizationMember {
+  id: string;
+  userId: string;
+  role: string;
+  createdAt: Date | string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    image?: string | null;
+  };
+}
+
+export interface OrganizationInvitation {
+  id: string;
+  email: string;
+  role: string;
+  status: string;
+}
+
+export interface OrganizationContextType {
+  id: string;
+  name: string;
+  slug: string;
+  logo?: string | null;
+  createdAt: Date | string;
+  members?: OrganizationMember[];
+  invitations?: OrganizationInvitation[];
+}
 
 const OrganizationContext = createContext<OrganizationContextType | null>(null);
 
@@ -20,7 +48,7 @@ export function OrganizationProvider({
   );
 }
 
-export function useOrganization() {
+export function useOrganization(): OrganizationContextType {
   const context = useContext(OrganizationContext);
 
   if (!context) {

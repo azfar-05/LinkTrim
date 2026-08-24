@@ -43,15 +43,15 @@ function Hero() {
       <DotTexture />
 
       <div className="relative mx-auto max-w-3xl text-center">
-        <span className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs text-muted-foreground shadow-sm">
+        <span className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 font-mono text-xs text-muted-foreground shadow-sm">
           <Sparkles className="size-3 text-chart-3" />
-          Invite-only early access
+          invite-only early access
         </span>
 
-        <h1 className="mt-6 text-4xl font-bold tracking-tight text-balance sm:text-6xl">
-          Shorten everything.
+        <h1 className="mt-6 text-4xl font-bold leading-[1.05] tracking-tight text-balance sm:text-6xl sm:leading-[1.05]">
+          Shorten everything<span className="text-chart-3">.</span>
           <br />
-          <span className="text-chart-3">Track what matters.</span>
+          Track what matters<span className="text-chart-3">.</span>
         </h1>
 
         <p className="mx-auto mt-5 max-w-xl text-pretty text-base text-muted-foreground sm:text-lg">
@@ -99,6 +99,9 @@ function HowItWorks() {
         {STEPS.map((step, i) => (
           <div key={step.title} className="relative">
             <div className="flex items-center gap-2.5">
+              <span className="font-mono text-xs tabular-nums text-muted-foreground/60">
+                0{i + 1}
+              </span>
               <h3 className="font-semibold">{step.title}</h3>
               {i < STEPS.length - 1 && (
                 <ArrowRight
@@ -153,7 +156,10 @@ function Features() {
   return (
     <section className="border-t px-4 py-20 sm:py-24">
       <div className="mx-auto max-w-3xl">
-        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+        <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+          Features
+        </p>
+        <h2 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
           Built-in, not bolted on
         </h2>
         <p className="mt-3 max-w-md text-sm text-muted-foreground">
@@ -162,12 +168,15 @@ function Features() {
         </p>
 
         <div className="mt-10 divide-y border-y">
-          {FEATURE_ROWS.map((row) => (
-            <div
-              key={row.title}
-              className="group flex gap-5 py-7 transition-colors"
-            >
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-chart-3/10 transition-colors group-hover:bg-chart-3/15">
+          {FEATURE_ROWS.map((row, i) => (
+          <div
+            key={row.title}
+            className="group flex gap-5 border-muted/60 py-7 transition-colors"
+          >
+            <span className="w-6 shrink-0 pt-0.5 font-mono text-xs tabular-nums text-muted-foreground/60 transition-colors group-hover:text-chart-3">
+              0{i + 1}
+            </span>
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-chart-3/10 transition-colors group-hover:bg-chart-3/15">
                 <row.icon className="size-4 text-chart-3" />
               </div>
               <div className="min-w-0">
@@ -189,8 +198,11 @@ function Analytics() {
     <section className="border-t bg-muted/30 px-4 py-20 sm:py-24">
       <div className="mx-auto max-w-5xl">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Per-click data, no noise
+          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            Analytics
+          </p>
+          <h2 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
+            Per-click data, no noise<span className="text-chart-3">.</span>
           </h2>
           <p className="mt-3 text-sm text-muted-foreground">
             Devices, referrers, countries, and peak hours — computed live from
@@ -230,7 +242,10 @@ function Roles() {
     <section className="border-t px-4 py-20 sm:py-24">
       <div className="mx-auto max-w-3xl">
         <div className="text-center">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            Access Control
+          </p>
+          <h2 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
             Two roles, one workspace
           </h2>
           <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
@@ -296,6 +311,7 @@ function CTAFooter() {
           <MousePointerClick className="relative mx-auto size-6 text-chart-3" />
           <h2 className="relative mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
             Your next link is one paste away
+            <span className="text-chart-3">.</span>
           </h2>
           <p className="relative mx-auto mt-3 max-w-md text-sm text-muted-foreground sm:text-base">
             Request access, or sign in if you&apos;re already a member.

@@ -7,9 +7,12 @@ import {
   ChevronDownIcon,
   ExternalLinkIcon,
   LockIcon,
+  PlusIcon,
   PowerIcon,
   SearchIcon,
   ShuffleIcon,
+  UserPlusIcon,
+  XIcon,
 } from "lucide-react";
 
 import { Button } from "@LinkTrim/ui/components/button";
@@ -48,15 +51,13 @@ export default function LinksPage() {
   const org = useOrganization();
   const { data: session } = authClient.useSession();
 
-  // Analytics visibility rule: owners/admins see every link's analytics,
-  // regular members only links they created. Mirrors server-side enforcement.
+  // Management + analytics visibility rule: owners/admins control every
+  // link, regular members only links they created. Mirrors server-side
+  // enforcement in PATCH /api/links and GET /api/analytics.
   const canSeeAllAnalytics = isAdminRole(
-    org.members?.find(
-      (m: { userId: string; role: string }) =>
-        m.userId === session?.user?.id,
-    )?.role ?? "",
+    org.members?.find((m) => m.userId === session?.user?.id)?.role ?? "",
   );
-  const canViewAnalytics = (row: LinkRow) =>
+  const canManageLink = (row: LinkRow) =>
     canSeeAllAnalytics || row.createdByUserId === session?.user?.id;
 
   const { links, setLinks, loading, refetch: fetchLinks } = useOrgLinks(org.slug);
@@ -202,7 +203,12 @@ export default function LinksPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Links</h1>
+        <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+          Workspace
+        </p>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight">
+          Links<span className="text-chart-3">.</span>
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Create and manage short links for your organization.
         </p>
@@ -342,8 +348,18 @@ export default function LinksPage() {
                 placeholder="Search slug or URL…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="pl-8"
+                className="pl-8 pr-8"
               />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  aria-label="Clear search"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <XIcon className="size-3.5" />
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -478,42 +494,44 @@ export default function LinksPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={() => handleToggleActive(row)}
-                            aria-label={
-                              row.isActive
-                                ? `Disable /${row.slug}`
-                                : `Enable /${row.slug}`
-                            }
-                            title={
-                              row.isActive
-                                ? "Disable link"
-                                : "Enable link"
-                            }
-                            className={
-                              row.isActive
-                                ? "text-chart-3 hover:text-chart-3"
-                                : "text-muted-foreground"
-                            }
-                          >
-                            <PowerIcon className="size-3.5" />
-                          </Button>
-                          {canViewAnalytics(row) ? (
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              onClick={() => openLinkAnalytics(row)}
-                              aria-label={`View analytics for /${row.slug}`}
-                              title="View analytics"
-                            >
-                              <BarChart3 className="size-3.5" />
-                            </Button>
+                          {canManageLink(row) ? (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => handleToggleActive(row)}
+                                aria-label={
+                                  row.isActive
+                                    ? `Disable /${row.slug}`
+                                    : `Enable /${row.slug}`
+                                }
+                                title={
+                                  row.isActive
+                                    ? "Disable link"
+                                    : "Enable link"
+                                }
+                                className={
+                                  row.isActive
+                                    ? "text-chart-3 hover:text-chart-3"
+                                    : "text-muted-foreground"
+                                }
+                              >
+                                <PowerIcon className="size-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => openLinkAnalytics(row)}
+                                aria-label={`View analytics for /${row.slug}`}
+                                title="View analytics"
+                              >
+                                <BarChart3 className="size-3.5" />
+                              </Button>
+                            </>
                           ) : (
                             <span
                               className="inline-flex size-7 items-center justify-center text-muted-foreground/40"
-                              title="Analytics are visible to the link creator and org admins only"
+                              title="Only the link creator or org admins can manage this link"
                             >
                               <LockIcon className="size-3.5" />
                             </span>

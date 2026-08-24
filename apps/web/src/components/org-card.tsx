@@ -19,9 +19,9 @@ export default function OrgCard({ org }: OrgCardProps) {
 
   return (
     <Link href={`/orgs/${org.slug}`} className="group block h-full focus:outline-none">
-      <Card className="h-full gap-4 transition-all duration-200 hover:border-ring hover:shadow-md">
+      <Card className="h-full gap-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-ring hover:shadow-lg">
         <CardHeader>
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 font-semibold text-primary">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/50 text-sm font-semibold text-foreground transition-colors group-hover:border-primary/30 group-hover:text-primary">
             {org.name.charAt(0).toUpperCase()}
           </div>
           <CardTitle className="truncate text-base font-semibold tracking-tight group-hover:text-primary transition-colors">

@@ -36,6 +36,7 @@ export function HeroDemo() {
   useEffect(() => {
     if (staticMode) return;
     const timer = setInterval(() => {
+      if (document.hidden) return;
       setFading(true);
       setTimeout(() => {
         setIndex((i) => (i + 1) % SAMPLES.length);

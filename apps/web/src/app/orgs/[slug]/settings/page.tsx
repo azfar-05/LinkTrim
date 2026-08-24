@@ -27,6 +27,11 @@ import {
   DialogFooter,
 } from "@LinkTrim/ui/components/dialog";
 import { toast } from "sonner";
+import {
+  Settings2Icon,
+  TriangleAlertIcon,
+  UserRoundIcon,
+} from "lucide-react";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -34,7 +39,7 @@ export default function SettingsPage() {
   const { data: session } = authClient.useSession();
 
   const currentUserMember = org?.members?.find(
-    (m: any) => m.userId === session?.user?.id
+    (m) => m.userId === session?.user?.id
   );
   const role: string = currentUserMember?.role ?? "member";
   const isAdmin = isAdminRole(role);
@@ -126,7 +131,10 @@ export default function SettingsPage() {
       {isAdmin && (
         <Card>
           <CardHeader>
-            <CardTitle>General</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Settings2Icon className="size-4 text-muted-foreground" />
+              General
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSave} className="flex flex-col gap-4">
@@ -180,7 +188,10 @@ export default function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Your Membership</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <UserRoundIcon className="size-4 text-muted-foreground" />
+            Your Membership
+          </CardTitle>
           <CardDescription>
             You are a member of this organization.
           </CardDescription>
@@ -221,7 +232,10 @@ export default function SettingsPage() {
       {isOwner && (
         <Card className="border-destructive/30 bg-destructive/5">
           <CardHeader>
-            <CardTitle className="text-destructive">Danger Zone</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <TriangleAlertIcon className="size-4" />
+              Danger Zone
+            </CardTitle>
             <CardDescription>
               Delete this organization, its links, and all click analytics. This
               action cannot be undone.

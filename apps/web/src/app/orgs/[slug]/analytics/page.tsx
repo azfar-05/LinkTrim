@@ -49,10 +49,7 @@ export default function AnalyticsPage() {
   // Analytics visibility rule: owners/admins see every link's analytics,
   // regular members only links they created. Mirrors server-side enforcement.
   const canSeeAll = isAdminRole(
-    org.members?.find(
-      (m: { userId: string; role: string }) =>
-        m.userId === session?.user?.id,
-    )?.role ?? "",
+    org.members?.find((m) => m.userId === session?.user?.id)?.role ?? "",
   );
   const viewableLinks = canSeeAll
     ? links
