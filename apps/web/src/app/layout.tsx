@@ -19,6 +19,14 @@ export const metadata: Metadata = {
   title: "LinkTrim — URL shortener for your team",
   description:
     "Invite-only URL shortener with custom slugs, per-click analytics, and role-based access for your team.",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon/favicon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
