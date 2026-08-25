@@ -1,29 +1,28 @@
 # LinkTrim
 
-**Production-quality, multi-tenant URL shortener for teams.**
-
-LinkTrim is an invite-only link management platform where organizations share one workspace to create short links, track per-link analytics, and collaborate with role-based access — powered by a modern TypeScript monorepo.
+Multi-tenant URL shortener for teams. Organizations share one workspace to create short links, track analytics, and collaborate with role-based access. Includes a REST API for programmatic link creation.
 
 ## Features
 
-- **Organizations** — Multi-tenant workspaces with `owner`, `admin`, and `member` roles (Better Auth)
-- **Custom & random slugs** — Pick a memorable slug like `localhost:3001/sale` or let LinkTrim generate one
-- **Link lifecycle controls** — Scheduled activation, expiration dates, and click caps that auto-disable links
-- **Analytics** — Organization-wide and per-link dashboards: clicks over time, unique visitors, device split, peak hours, referrers, countries, top links, and recent activity (Recharts)
-- **Click recording** — Every redirect logs IP, user agent, referrer, device, and country; bots are flagged and excluded from all metrics
+- **Organizations** — Multi-tenant workspaces with `owner`, `admin`, and `member` roles
+- **Custom & random slugs** — Pick a slug or let the server generate one
+- **Link lifecycle** — Scheduled activation, expiration dates, click caps that auto-disable
+- **REST API** — Create links programmatically via API keys (no browser required)
+- **API key management** — Owner-only dashboard to create, list, and revoke keys
+- **Analytics** — Org-wide and per-link: clicks over time, devices, referrers, countries, recent activity
+- **Click recording** — Every redirect logs IP, user agent, referrer, device, country; bots flagged and excluded from metrics
 - **Members & invitations** — Invite teammates, promote/demote roles, cancel pending invitations
-- **Organization settings** — Rename workspaces, leave organizations, and delete orgs (owner-only danger zone)
-- **Reserved-slug enforcement** — Reserved keywords are blocked server-side on links and organizations
+- **Organization settings** — Rename workspaces, leave, delete (owner-only)
 
 ## Tech Stack
 
 | Layer      | Technology                                   |
 | ---------- | -------------------------------------------- |
-| Framework  | Next.js (App Router, Server Components)      |
+| Framework  | Next.js 16 (App Router, Server Components)   |
 | Language   | TypeScript (strict)                          |
-| Database   | PostgreSQL with Drizzle ORM                  |
+| Database   | PostgreSQL 18 with Drizzle ORM               |
 | Auth       | Better Auth (email/password, organizations)  |
-| UI         | Tailwind CSS + shadcn/ui primitives          |
+| UI         | Tailwind CSS v4 + shadcn/ui                  |
 | Charts     | Recharts                                     |
 | Monorepo   | Turborepo + Bun workspaces                   |
 
@@ -31,105 +30,150 @@ LinkTrim is an invite-only link management platform where organizations share on
 
 ### Prerequisites
 
-- [Bun](https://bun.sh) `>= 1.x`
-- [Docker](https://www.docker.com) (for the local PostgreSQL database)
+- [Bun](https://bun.sh) >= 1.3
+- [Docker](https://www.docker.com) (for local PostgreSQL)
 
 ### 1. Install dependencies
 
-```bash
+```sh
 bun install
 ```
 
 ### 2. Configure environment
 
-Copy `apps/web/.env.example` to `apps/web/.env` (or create it) with:
+Copy the example env file and fill in a secret:
+
+```sh
+cp apps/web/.env.example apps/web/.env
+```
+
+The defaults work with the bundled Docker Postgres:
 
 ```env
-DATABASE_URL=postgres://postgres:CHANGE_ME@localhost:5432/LinkTrim
-BETTER_AUTH_SECRET=<a-random-secret-at-least-32-chars>
+DATABASE_URL=postgres://postgres:password@localhost:5432/LinkTrim
+BETTER_AUTH_SECRET=<generate a random string, minimum 32 characters>
 BETTER_AUTH_URL=http://localhost:3001
 CORS_ORIGIN=http://localhost:3001
 ```
 
-> The bundled `docker-compose` (step 3) configures Postgres with user `postgres` and password `password`, so for local development use `postgres://postgres:password@localhost:5432/LinkTrim`. Use a strong password in any shared or deployed environment.
+### 3. Start the database and push the schema
 
-### 3. Start the database and apply the schema
-
-```bash
-bun run db:start   # docker compose up -d (Postgres 18)
-bun run db:push    # push the Drizzle schema
+```sh
+bun run db:start    # starts Postgres 18 via Docker
+bun run db:push     # pushes Drizzle schema to the database
 ```
 
-### 4. Run the dev server
+### 4. Start the dev server
 
-```bash
+```sh
 bun run dev
 ```
 
-Open [http://localhost:3001](http://localhost:3001). Sign up, create an organization, and start shortening links.
+Open [http://localhost:3001](http://localhost:3001). Sign up, create an organization, and start creating links.
+
+## API
+
+Once you have an API key (created from the dashboard by the org owner), you can create links without the browser.
+
+### Create a link
+
+```sh
+curl -X POST http://localhost:3001/api/links \
+  -H "Authorization: Bearer lt_your_api_key" \
+  -H "Content-Type: application/json" \
+  -d '{"organizationSlug":"my-org","originalUrl":"https://example.com"}'
+```
+
+The `slug` field is optional. If omitted, a random 8-character slug is generated.
+
+Optional fields: `slug`, `clickCap`, `expiresAt`, `scheduledAt`.
+
+### API key management
+
+API keys are managed through the dashboard at `/orgs/[slug]/api-keys`. Only the organization owner can create or revoke keys. Keys are shown once at creation and cannot be recovered.
+
+| Method | Endpoint         | Description              |
+| ------ | ---------------- | ------------------------ |
+| POST   | `/api/links`     | Create a link            |
+| GET    | `/api/links`     | List links for an org    |
+| PATCH  | `/api/links`     | Toggle link active state |
 
 ## Demo Data
 
-Want to demo the product quickly? Seed a ready-made organization with members, links, and ~30k realistic click records:
+Seed a ready-made organization with members, links, and ~30k realistic click records:
 
-```bash
-bun run db:seed            # owner = first user in the database
+```sh
+bun run db:seed                  # owner = first user in the database
 bun run db:seed you@example.com  # owner = a specific user
 ```
 
-This creates a `demo_org` workspace owned by your account with 7 links covering high/low/zero traffic, expired and scheduled links, 3 demo members, and a pending invitation. The seed is idempotent — re-running it resets the demo organization.
+Creates a `demo_org` workspace with 7 links, 3 demo members, a pending invitation, and click data spanning several weeks. The seed is idempotent.
 
-## Analytics
+## Database Schema
 
-All metrics are computed live from the `click` table — nothing is precomputed, simulated, or estimated. Every redirect inserts one row (IP, user agent, referrer, device, country) before forwarding to the destination.
+| Table         | Purpose                                             |
+| ------------- | --------------------------------------------------- |
+| `user`        | User accounts (email/password auth)                 |
+| `session`     | Active sessions, tracks `active_organization_id`    |
+| `account`     | Auth provider links (email/password in this case)   |
+| `verification`| Email verification tokens                           |
+| `organization`| Tenant workspaces (name, slug, logo)                |
+| `member`      | Org membership with roles (`owner`/`admin`/`member`)|
+| `invitation`  | Pending org invitations                             |
+| `link`        | Short links (slug, URL, click cap, expiry, status)  |
+| `click`       | Every redirect (IP, user agent, device, country)    |
+| `api_key`     | API keys for programmatic access (hashed, revocable)|
 
-- **Bots** are detected from the user agent at redirect time. Their rows are kept with `is_bot = true` (visible in the per-link recent activity feed) but excluded from every metric and never increment a link's click counter.
-- **Unique visitors** are counted as distinct non-null IPs. This undercounts visitors sharing one IP; there is no fingerprinting.
-- **Device** is parsed from the user agent once, when the click is recorded (`Mobile`, `Tablet`, `Desktop`, `TV`, `Other`). Rows recorded before this column existed show up as Unknown.
-- **Country** comes from CDN geo headers: `x-vercel-ip-country` on Vercel or `cf-ipcountry` on Cloudflare. Local development has no geo headers, so countries read as Unknown there.
-- **Referrers** are normalized to bare hostnames; visits without a `Referer` header count as Direct.
+Schema definitions: `packages/db/src/schema/`
 
 ## Project Structure
 
 ```
 LinkTrim/
 ├── apps/
-│   └── web/              # Next.js application
-│       └── src/app/      # App Router pages & API routes
+│   └── web/                          # Next.js application
+│       └── src/
+│           ├── app/                  # App Router pages & API routes
+│           ├── components/           # App-level components
+│           ├── context/              # React contexts (organization)
+│           ├── hooks/                # Custom hooks (links, analytics)
+│           ├── lib/                  # Auth client, roles, slugs, API key auth
+│           └── types/                # TypeScript type definitions
 ├── packages/
-│   ├── auth/             # Better Auth server configuration
-│   ├── db/               # Drizzle schema, migrations & seed scripts
-│   ├── ui/               # Shared shadcn/ui components & styles
-│   ├── env/              # Validated environment variables (zod)
-│   └── config/           # Shared TypeScript/tooling config
-├── turbo.json            # Turborepo task pipeline
-└── package.json          # Workspace root scripts
+│   ├── auth/                         # Better Auth server configuration
+│   ├── db/                           # Drizzle schema, migrations, seed scripts
+│   ├── ui/                           # Shared shadcn/ui components & styles
+│   ├── env/                          # Validated environment variables (zod)
+│   └── config/                       # Shared TypeScript config
+├── turbo.json                        # Turborepo task pipeline
+└── package.json                      # Workspace root scripts
 ```
 
-## Available Scripts
+## Scripts
 
-| Command                 | Description                                   |
-| ----------------------- | --------------------------------------------- |
-| `bun run dev`           | Start all applications in development mode    |
-| `bun run dev:web`       | Start only the web app (port 3001)            |
-| `bun run build`         | Build all applications                        |
-| `bun run check-types`   | Type-check all packages                       |
-| `bun run db:start`      | Start the PostgreSQL container                |
-| `bun run db:stop`       | Stop the PostgreSQL container                 |
-| `bun run db:push`       | Push schema changes to the database           |
-| `bun run db:generate`   | Generate Drizzle migrations from the schema   |
-| `bun run db:migrate`    | Apply generated migrations                    |
-| `bun run db:studio`     | Open Drizzle Studio to browse the database    |
-| `bun run db:seed`       | Seed demo data (`db:seed <email>` to pick owner) |
+| Command              | Description                                    |
+| -------------------- | ---------------------------------------------- |
+| `bun run dev`        | Start all applications in development mode     |
+| `bun run dev:web`    | Start only the web app (port 3001)             |
+| `bun run build`      | Build all applications                         |
+| `bun run check-types`| Type-check all packages                        |
+| `bun run db:start`   | Start the PostgreSQL container                 |
+| `bun run db:stop`    | Stop the PostgreSQL container                  |
+| `bun run db:down`    | Stop and remove the PostgreSQL container        |
+| `bun run db:push`    | Push schema changes to the database            |
+| `bun run db:generate`| Generate Drizzle migration files               |
+| `bun run db:migrate` | Apply generated migrations                     |
+| `bun run db:studio`  | Open Drizzle Studio in the browser             |
+| `bun run db:seed`    | Seed demo data (`db:seed <email>` to set owner)|
 
 ## Contributing
 
 1. Fork the repository.
 2. Create a feature branch: `git checkout -b feat/my-feature`
-3. Make your changes and verify them with `bun run check-types`.
-4. Open a pull request describing the change and any trade-offs.
+3. Make your changes and verify with `bun run check-types`.
+4. Open a pull request describing the change.
 
-Please keep changes small, preserve multi-tenant isolation, and never weaken authentication or authorization.
+Keep changes small, preserve multi-tenant isolation, and never weaken authentication or authorization.
 
 ## License
 
