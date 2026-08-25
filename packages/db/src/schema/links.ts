@@ -6,6 +6,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 import { organization } from "./auth";
@@ -86,5 +87,43 @@ export const clickRelations = relations(click, ({ one }) => ({
   link: one(link, {
     fields: [click.linkId],
     references: [link.id],
+  }),
+}));
+
+export const apiKey = pgTable(
+  "api_key",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    createdById: text("created_by_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    hashedKey: text("hashed_key").notNull().unique(),
+    prefix: text("prefix").notNull(),
+    lastUsedAt: timestamp("last_used_at"),
+    expiresAt: timestamp("expires_at"),
+    revokedAt: timestamp("revoked_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("apiKey_organizationId_idx").on(table.organizationId),
+    index("apiKey_createdById_idx").on(table.createdById),
+    uniqueIndex("apiKey_hashedKey_uidx").on(table.hashedKey),
+  ],
+);
+
+export const apiKeyRelations = relations(apiKey, ({ one }) => ({
+  organization: one(organization, {
+    fields: [apiKey.organizationId],
+    references: [organization.id],
+  }),
+  createdBy: one(user, {
+    fields: [apiKey.createdById],
+    references: [user.id],
   }),
 }));

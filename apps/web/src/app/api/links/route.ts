@@ -8,6 +8,7 @@ import { user } from "@LinkTrim/db/schema/auth";
 import { link } from "@LinkTrim/db/schema/links";
 import { isValidLinkSlug, randomSlug } from "@/lib/slugs";
 import { isAdminRole } from "@/lib/roles";
+import { resolveAuth } from "@/lib/resolve-auth";
 
 function isValidUrl(value: string) {
   try {
@@ -72,18 +73,16 @@ async function tryInsert(
 }
 
 export async function POST(request: NextRequest) {
-  const session = await auth.api.getSession({
-    headers: request.headers,
-  });
-
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   const body = await request.json();
   const { organizationSlug, originalUrl, clickCap, expiresAt, scheduledAt } =
     body as Record<string, unknown>;
   let slug = body.slug as string | undefined;
+
+  const authResult = await resolveAuth(request, organizationSlug as string);
+
+  if (!authResult) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   if (!originalUrl || typeof originalUrl !== "string") {
     return NextResponse.json(
@@ -127,34 +126,44 @@ export async function POST(request: NextRequest) {
     slug = randomSlug();
   }
 
-  const organization = await auth.api
-    .getFullOrganization({
-      headers: request.headers,
-      query: { organizationSlug },
-    })
-    .catch(() => null);
+  // For API key auth, the org is already verified in resolveAuth.
+  // For session auth, we still need to verify membership.
+  let organizationId: string;
 
-  if (!organization) {
-    return NextResponse.json(
-      { error: "Organization not found" },
-      { status: 404 },
+  if (authResult.kind === "api-key") {
+    organizationId = authResult.organizationId;
+  } else {
+    const organization = await auth.api
+      .getFullOrganization({
+        headers: request.headers,
+        query: { organizationSlug },
+      })
+      .catch(() => null);
+
+    if (!organization) {
+      return NextResponse.json(
+        { error: "Organization not found" },
+        { status: 404 },
+      );
+    }
+
+    const member = organization.members?.find(
+      (m) => m.userId === authResult.userId,
     );
-  }
 
-  const member = organization.members?.find(
-    (m) => m.userId === session.user.id,
-  );
+    if (!member) {
+      return NextResponse.json(
+        { error: "You are not a member of this organization" },
+        { status: 403 },
+      );
+    }
 
-  if (!member) {
-    return NextResponse.json(
-      { error: "You are not a member of this organization" },
-      { status: 403 },
-    );
+    organizationId = organization.id;
   }
 
   const insertData: InsertLink = {
-    organizationId: organization.id,
-    createdById: session.user.id,
+    organizationId,
+    createdById: authResult.userId,
     slug,
     originalUrl,
     clickCount: 0,

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   Home,
+  Key,
   Link2,
   Settings,
   Users,
@@ -48,6 +49,11 @@ const items = [
     title: "Members",
     href: "/members",
     icon: Users,
+  },
+  {
+    title: "API Keys",
+    href: "/api-keys",
+    icon: Key,
   },
   {
     title: "Settings",
