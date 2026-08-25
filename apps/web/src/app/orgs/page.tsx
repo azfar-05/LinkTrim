@@ -2,7 +2,7 @@ import { auth } from "@LinkTrim/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import Dashboard from "./dashboard";
+import Organization from "./organizations";
 
 export default async function DashboardPage() {
   const session = await auth.api.getSession({
@@ -14,10 +14,8 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div>
-      <h1>Dashboard</h1>
-      <p>Welcome {session.user.name}</p>
-      <Dashboard session={session} />
-    </div>
+    <main className="w-full h-full bg-background/50">
+      <Organization session={session} />
+    </main>
   );
 }

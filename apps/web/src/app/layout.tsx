@@ -16,8 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LinkTrim",
-  description: "LinkTrim",
+  title: "LinkTrim — URL shortener for your team",
+  description:
+    "Invite-only URL shortener with custom slugs, per-click analytics, and role-based access for your team.",
 };
 
 export default function RootLayout({
@@ -29,10 +30,8 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Providers>
-          <div className="grid grid-rows-[auto_1fr] h-svh">
-            <Header />
-            {children}
-          </div>
+          <Header />
+          {children}
         </Providers>
       </body>
     </html>
