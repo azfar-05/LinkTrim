@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -14,6 +17,33 @@ import {
 import { AnalyticsPreview } from "@/components/analytics-preview";
 import { GetStartedButton } from "@/components/get-started-button";
 import { HeroDemo } from "@/components/hero-demo";
+
+function HowItWorksStep3() {
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
+
+  const host = origin ? new URL(origin).host : "";
+
+  return (
+    <div className="relative">
+      <div className="flex items-center gap-2.5">
+        <span className="font-mono text-xs tabular-nums text-muted-foreground/60">
+          03
+        </span>
+        <h3 className="font-semibold">Share</h3>
+      </div>
+      <p className="mt-1.5 inline-block max-w-full truncate rounded-md border border-chart-3/30 bg-chart-3/10 px-2 py-1 font-mono text-xs text-chart-3">
+        {host && `${host}/sale`}
+      </p>
+      <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
+        Watch clean, bot-free click data land in your dashboard.
+      </p>
+    </div>
+  );
+}
 
 export default function Home() {
   return (
@@ -45,7 +75,7 @@ function Hero() {
       <div className="relative mx-auto max-w-3xl text-center">
         <span className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 font-mono text-xs text-muted-foreground shadow-sm">
           <Sparkles className="size-3 text-chart-3" />
-          invite-only early access
+          early access
         </span>
 
         <h1 className="mt-6 text-4xl font-bold leading-[1.05] tracking-tight text-balance sm:text-6xl sm:leading-[1.05]">
@@ -55,7 +85,7 @@ function Hero() {
         </h1>
 
         <p className="mx-auto mt-5 max-w-xl text-pretty text-base text-muted-foreground sm:text-lg">
-          An invite-only URL shortener for teams — custom slugs, click caps,
+          A URL shortener for teams — custom slugs, click caps,
           and bot-free analytics in one shared workspace.
         </p>
 
@@ -84,12 +114,6 @@ const STEPS = [
     visual: "→ /sale",
     accent: true,
   },
-  {
-    title: "Share",
-    desc: "Watch clean, bot-free click data land in your dashboard.",
-    visual: "linktrim.app/sale",
-    accent: true,
-  },
 ];
 
 function HowItWorks() {
@@ -103,12 +127,10 @@ function HowItWorks() {
                 0{i + 1}
               </span>
               <h3 className="font-semibold">{step.title}</h3>
-              {i < STEPS.length - 1 && (
-                <ArrowRight
-                  className="hidden size-3.5 text-muted-foreground/50 sm:inline"
-                  aria-hidden
-                />
-              )}
+              <ArrowRight
+                className="hidden size-3.5 text-muted-foreground/50 sm:inline"
+                aria-hidden
+              />
             </div>
             <p
               className={`mt-1.5 inline-block max-w-full truncate rounded-md border px-2 py-1 font-mono text-xs ${
@@ -124,6 +146,8 @@ function HowItWorks() {
             </p>
           </div>
         ))}
+
+        <HowItWorksStep3 />
       </div>
     </section>
   );
@@ -294,7 +318,7 @@ function Roles() {
         </div>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
-          Access is invite-only. New members join as{" "}
+          Access is role-based. New members join as{" "}
           <span className="font-mono text-foreground">member</span> by default.
         </p>
       </div>
@@ -314,7 +338,7 @@ function CTAFooter() {
             <span className="text-chart-3">.</span>
           </h2>
           <p className="relative mx-auto mt-3 max-w-md text-sm text-muted-foreground sm:text-base">
-            Request access, or sign in if you&apos;re already a member.
+            Sign in to start shortening links.
           </p>
           <div className="relative mt-8">
             <GetStartedButton />

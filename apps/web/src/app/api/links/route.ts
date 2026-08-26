@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@LinkTrim/auth";
 import { isReservedSlug, reservedSlugMessage } from "@LinkTrim/auth/reserved-slugs";
 import { db } from "@LinkTrim/db";
+import { checkRateLimit } from "@LinkTrim/db/lib/rate-limit";
 import { user } from "@LinkTrim/db/schema/auth";
 import { link } from "@LinkTrim/db/schema/links";
 import { isValidLinkSlug, randomSlug } from "@/lib/slugs";
@@ -82,6 +83,17 @@ export async function POST(request: NextRequest) {
 
   if (!authResult) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate limit API key requests
+  if (authResult.kind === "api-key") {
+    const { allowed, remaining } = await checkRateLimit(authResult.keyId);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Try again in a minute." },
+        { status: 429 },
+      );
+    }
   }
 
   if (!originalUrl || typeof originalUrl !== "string") {

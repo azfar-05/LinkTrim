@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -69,6 +70,14 @@ function ChartTooltip({
 }
 
 export function AnalyticsPreview() {
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
+
+  const host = origin ? new URL(origin).host : "localhost:3001";
+
   return (
     <div className="overflow-hidden rounded-xl border bg-card shadow-sm ring-1 ring-foreground/10">
       {/* Browser chrome */}
@@ -77,7 +86,7 @@ export function AnalyticsPreview() {
         <span className="size-2.5 rounded-full bg-muted-foreground/25" />
         <span className="size-2.5 rounded-full bg-muted-foreground/25" />
         <span className="ml-3 truncate rounded-md bg-background px-3 py-1 font-mono text-[11px] text-muted-foreground ring-1 ring-foreground/10">
-          linktrim.app/orgs/demo-org/analytics
+          {host && `${host}/orgs/demo-org/analytics`}
         </span>
       </div>
 
