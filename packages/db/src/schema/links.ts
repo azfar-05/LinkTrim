@@ -127,3 +127,21 @@ export const apiKeyRelations = relations(apiKey, ({ one }) => ({
     references: [user.id],
   }),
 }));
+
+export const rateLimit = pgTable(
+  "rate_limit",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    keyId: text("key_id")
+      .notNull()
+      .references(() => apiKey.id, { onDelete: "cascade" }),
+    windowStart: timestamp("window_start").notNull(),
+    count: integer("count").default(1).notNull(),
+  },
+  (table) => [
+    index("rateLimit_keyId_idx").on(table.keyId),
+    index("rateLimit_windowStart_idx").on(table.windowStart),
+  ],
+);

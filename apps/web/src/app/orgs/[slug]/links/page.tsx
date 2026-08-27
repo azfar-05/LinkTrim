@@ -11,6 +11,7 @@ import {
   PowerIcon,
   SearchIcon,
   ShuffleIcon,
+  Trash2Icon,
   UserPlusIcon,
   XIcon,
 } from "lucide-react";
@@ -23,6 +24,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@LinkTrim/ui/components/card";
+import {
+  Dialog,
+  DialogPopup,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@LinkTrim/ui/components/dialog";
 import {
   Empty,
   EmptyContent,
@@ -114,6 +123,37 @@ export default function LinksPage() {
     }
   }
 
+  // ── Delete ──
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+
+    try {
+      const res = await fetch("/api/links/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          organizationSlug: org.slug,
+          linkId: deleteTarget.id,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(data.error || "Failed to delete link");
+        return;
+      }
+
+      setLinks((prev) => prev.filter((l) => l.id !== deleteTarget.id));
+      toast.success(`/${deleteTarget.slug} deleted`);
+      setDeleteTarget(null);
+    } catch {
+      toast.error("Something went wrong");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   const filteredLinks = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return links;
@@ -133,6 +173,10 @@ export default function LinksPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+
+  // Delete state
+  const [deleteTarget, setDeleteTarget] = useState<LinkRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const handleSlugChange = (value: string) => {
     setSlug(value);
@@ -527,6 +571,16 @@ export default function LinksPage() {
                               >
                                 <BarChart3 className="size-3.5" />
                               </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => setDeleteTarget(row)}
+                                aria-label={`Delete /${row.slug}`}
+                                title="Delete link"
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2Icon className="size-3.5" />
+                              </Button>
                             </>
                           ) : (
                             <span
@@ -554,6 +608,30 @@ export default function LinksPage() {
         organizationSlug={org.slug}
         link={analyticsLink}
       />
+
+      {/* ── Delete confirmation ── */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <DialogPopup>
+          <DialogHeader>
+            <DialogTitle>Delete Link</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete <span className="font-mono text-foreground">/{deleteTarget?.slug}</span>? This will permanently remove the link and all its click data.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogPopup>
+      </Dialog>
     </div>
   );
 }
